@@ -8,13 +8,13 @@ include_directories(include)
 
 #all these set of cpp files mentioned in the SOURCES will be compiled
 set(SOURCES
-    src/main.cpp
-    src/lru_list.cpp
-    src/cache_store.cpp
-    src/ttl_manager.cpp
-    src/http_server.cpp
-    src/replication_manager.cpp
-    src/heartbeat.cpp
+    ../src/main.cpp
+    ../src/lru_list.cpp
+    ../src/cache_store.cpp
+    ../src/ttl_manager.cpp
+    ../src/http_server.cpp
+    ../src/replication_manager.cpp
+    ../src/heartbeat.cpp
 )
 
 include(FetchContent) #enable the downloading from the external libs github or other sources
@@ -22,7 +22,7 @@ include(FetchContent) #enable the downloading from the external libs github or o
 FetchContent_Declare( 
     json
     GIT_REPOSITORY https://github.com/nlohmann/json.git #download from this github repo 
-    GIT_TAG v3.11.2
+    GIT_TAG v3.11.3
 )
 FetchContent_MakeAvailable(json) #download the lib and adds it in the build 
 
@@ -34,7 +34,8 @@ FetchContent_Declare(
 FetchContent_MakeAvailable(httplib)
 
 add_executable(cache_server ${SOURCES}) #create the final executable server and the files in the SOURCES would be compiled after build cache_server runs
-target_link_libraries(cache_server PRIVATE Threads::Threads nlohmann_json::nlohmann_json cpp-httplib::cpp-httplib) #link the libraries Threads,json,http
+target_include_directories(cache_server PRIVATE ${httplib_SOURCE_DIR})
+target_link_libraries(cache_server PRIVATE Threads::Threads nlohmann_json::nlohmann_json) #link the libraries Threads,json,http
 
-add_executable(cache_tests tests/test_cache.cpp src/lru_list.cpp src/cache_store.cpp) #for the testing purpose build executables
+add_executable(cache_tests ../tests/test_cache.cpp ../src/lru_list.cpp ../src/cache_store.cpp) #for the testing purpose build executables
 target_link_libraries(cache_tests PRIVATE Threads::Threads nlohmann_json::nlohmann_json) 

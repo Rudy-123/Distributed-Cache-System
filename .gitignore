@@ -1,0 +1,11 @@
+cpp-cache-engine/build/
+build/
+.vscode/
+*.exe
+*.obj
+*.log
+CMakeCache.txt
+CMakeFiles/
+build.ninja
+.ninja_log
+.ninja_deps
