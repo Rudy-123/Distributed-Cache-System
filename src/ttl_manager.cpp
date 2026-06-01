@@ -24,9 +24,7 @@ void TTLManager::stop(){
 
 void TTLManager::cleanupLoop(){
     while(running.load()){
-        std::this_thread::sleep_for(std::chrono::seconds(10));//the thread that would check for the expired ones and creating the thread every 10 seconds to do so 
-        if(!running.load()){
-            break;
+        std::this_thread::sleep_for(std::chrono::seconds(10));//the thread that would check for the expired ones and sleep for 10 secs and then again check so this occurs in a loop
         }
         int evicted=cache.cleanupExpired();
         if(evicted>0){
