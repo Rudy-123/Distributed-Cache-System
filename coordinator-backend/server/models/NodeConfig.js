@@ -11,7 +11,7 @@ const NodeConfigSchema = new mongoose.Schema(
     role: { type: String, enum: ["master", "replica"], default: "replica" }, //enum means only 2 values are allowed
     status: {
       type: String,
-      enum: ["healthy", "dead", "unknwon"],
+      enum: ["healthy", "dead", "unknown"],
       default: "unknown",
     },
     lastHeartbeat: { type: Date, default: Date.now() },
