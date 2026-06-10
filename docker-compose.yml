@@ -1,0 +1,77 @@
+services:
+  # ── C++ Cache Nodes ─────────────────────────────────────────
+  cache-master:
+    build:
+      context: .
+      dockerfile: cpp-cache-engine/Dockerfile
+    container_name: cache-master
+    command:
+      [
+        "cache_server",
+        "--role=master",
+        "--port=5051",
+        "--peers=cache-replica-1:5052,cache-replica-2:5053",
+      ]
+    ports:
+      - "5051:5051"
+    networks:
+      - cache-net
+    restart: unless-stopped
+
+  cache-replica-1:
+    build:
+      context: .
+      dockerfile: cpp-cache-engine/Dockerfile
+    container_name: cache-replica-1
+    command: ["cache_server", "--role=replica", "--port=5052"]
+    ports:
+      - "5052:5052"
+    networks:
+      - cache-net
+    restart: unless-stopped
+
+  cache-replica-2:
+    build:
+      context: .
+      dockerfile: cpp-cache-engine/Dockerfile
+    container_name: cache-replica-2
+    command: ["cache_server", "--role=replica", "--port=5053"]
+    ports:
+      - "5053:5053"
+    networks:
+      - cache-net
+    restart: unless-stopped
+
+  # ── Node.js Coordinator Backend ─────────────────────────────
+  coordinator-backend:
+    build:
+      context: ./coordinator-backend
+    container_name: coordinator-backend
+    env_file:
+      - ./coordinator-backend/.env
+    ports:
+      - "5000:5000"
+    depends_on:
+      - cache-master
+      - cache-replica-1
+      - cache-replica-2
+    networks:
+      - cache-net
+    restart: unless-stopped
+
+  # ── React Frontend (Vite + Nginx) ──────────────────────────
+  coordinator-frontend:
+    build:
+      context: ./coordinator-frontend
+    container_name: coordinator-frontend
+    ports:
+      - "80:80"
+    depends_on:
+      - coordinator-backend
+    networks:
+      - cache-net
+    restart: unless-stopped
+
+networks:
+  cache-net:
+    driver: bridge

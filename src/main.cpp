@@ -13,7 +13,7 @@
 
 std::unique_ptr<HttpServer> server_ptr=nullptr; //unique_ptr automatic memory management and for Httpserver
 std::unique_ptr<TTLManager> ttl_ptr=nullptr;
-std::unique_ptr<Heartbeat> hb_ptr=nullptr;
+std::shared_ptr<HeartBeat> hb_ptr=nullptr;
 
 void handlesignal(int signal){ //if ctrl c pressed then this would run 
     std::cout<< " Signal " << signal << " received. Initialising graceful shutdown... ";
@@ -37,11 +37,11 @@ int main(int argc,char *argv[]){ //no of args and actual values of args
 
     auto repl_mgr=std::make_shared<ReplicationManager>();
     for(const auto& peer:config.peers){ //peer is the current peer node and config.peers has the list of all the nodes
-        repl_mgr->addPeer(peer.host,peer.port);
+        repl_mgr->addPeer(peer.first,peer.second);
     }
     if(!config.peers.empty()){
-        hb_ptr=std::make_unique<Heartbeat>(config.peers);
-        hb_ptr->start; //start the background monitoring
+        hb_ptr=std::make_shared<HeartBeat>(config.peers);
+        hb_ptr->start(); //start the background monitoring
     }
     server_ptr=std::make_unique<HttpServer>(cache,repl_mgr,hb_ptr,config.port,config.role); //create the server with all the components 
     server_ptr->start();

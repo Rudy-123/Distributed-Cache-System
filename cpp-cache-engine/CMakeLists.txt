@@ -4,7 +4,8 @@ project(distributed_cache VERSION 1.0.0 LANGUAGES CXX)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 find_package(Threads REQUIRED) #for the multithreading support
-include_directories(include)
+add_definitions(-D_WIN32_WINNT=0x0A00) #target Windows 10 API for httplib
+include_directories(include ../src)
 
 #all these set of cpp files mentioned in the SOURCES will be compiled
 set(SOURCES
@@ -35,7 +36,12 @@ FetchContent_MakeAvailable(httplib)
 
 add_executable(cache_server ${SOURCES}) #create the final executable server and the files in the SOURCES would be compiled after build cache_server runs
 target_include_directories(cache_server PRIVATE ${httplib_SOURCE_DIR})
-target_link_libraries(cache_server PRIVATE Threads::Threads nlohmann_json::nlohmann_json) #link the libraries Threads,json,http
+target_link_libraries(cache_server PRIVATE Threads::Threads nlohmann_json::nlohmann_json ws2_32) #link the libraries Threads,json,http,ws2_32
 
 add_executable(cache_tests ../tests/test_cache.cpp ../src/lru_list.cpp ../src/cache_store.cpp) #for the testing purpose build executables
-target_link_libraries(cache_tests PRIVATE Threads::Threads nlohmann_json::nlohmann_json) 
+target_link_libraries(cache_tests PRIVATE Threads::Threads nlohmann_json::nlohmann_json ws2_32) 
+
+#benchmark throughput test
+add_executable(throughput ../benchmarks/throughput.cpp)
+target_include_directories(throughput PRIVATE ${httplib_SOURCE_DIR})
+target_link_libraries(throughput PRIVATE Threads::Threads ws2_32)

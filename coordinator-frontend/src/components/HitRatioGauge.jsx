@@ -1,36 +1,41 @@
 import React from "react";
 import { ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
 
-function HitRatioGauge({ hitRatio = 0.85 }) {
+function HitRatioGauge({ hitRatio = 0.92 }) {
   const data = [
     { name: "Hits", value: hitRatio },
     { name: "Misses", value: 1 - hitRatio },
   ];
 
-  const COLORS = ["#00ff9d", "#ff4757"];
+  const COLORS = ["var(--color-success)", "var(--border-muted)"];
 
   return (
     <div
+      className="obs-card"
       style={{
-        padding: "24px",
-        background: "#0f1523",
-        border: "1px solid #1e2d45",
-        borderRadius: "12px",
-        textAlign: "center",
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        justifyContent: "center",
       }}
     >
-      <h3 style={{ marginBottom: "8px", color: "#e8f4ff" }}>Cache Hit Ratio</h3>
-      <div style={{ width: "100%", height: 180, position: "relative" }}>
+      <div style={{ width: "100%", textAlign: "left", marginBottom: "8px" }}>
+        <span className="obs-header" style={{ margin: 0 }}>
+          Cache Hit Efficiency
+        </span>
+      </div>
+
+      <div style={{ width: "100%", height: 130, position: "relative", marginTop: "12px" }}>
         <ResponsiveContainer>
           <PieChart>
             <Pie
               data={data}
               cx="50%"
-              cy="100%"
+              cy="90%"
               startAngle={180}
               endAngle={0}
-              innerRadius={60}
-              outerRadius={80}
+              innerRadius={50}
+              outerRadius={70}
               paddingAngle={0}
               dataKey="value"
             >
@@ -46,15 +51,33 @@ function HitRatioGauge({ hitRatio = 0.85 }) {
         <div
           style={{
             position: "absolute",
-            bottom: "10px",
+            bottom: "16px",
             left: 0,
             right: 0,
-            fontSize: "24px",
-            fontWeight: "bold",
-            color: "#e8f4ff",
+            textAlign: "center",
           }}
         >
-          {(hitRatio * 100).toFixed(1)}%
+          <span
+            style={{
+              fontSize: "26px",
+              fontWeight: "800",
+              color: "var(--text-primary)",
+              fontFamily: "var(--font-mono)",
+            }}
+          >
+            {(hitRatio * 100).toFixed(1)}%
+          </span>
+          <p
+            style={{
+              margin: "2px 0 0 0",
+              fontSize: "10px",
+              color: "var(--text-secondary)",
+              textTransform: "uppercase",
+              letterSpacing: "0.5px",
+            }}
+          >
+            Hit Ratio
+          </p>
         </div>
       </div>
     </div>

@@ -36,34 +36,25 @@ bool ReplicationManager::replicateSet(const std::string &key,const std::string& 
         target_peers=peers;
     }
     if(target_peers.empty()){return true;} //only master exists no slaves
-    std::atomic<int>successfull_acks{1};
-    int total_nodes=target_peers.size()+1; //self plus others
-    int quorum_required=((total_nodes)/2)+1; //quorum is >50% for success
-    std::vector<std::thread> threads;
+    int successfull_acks = 1;
+    int total_nodes = target_peers.size() + 1; // self + others
+    int quorum_required = (total_nodes / 2) + 1; // quorum is > 50%
     for(const auto& peer : target_peers){
         if(!peer.is_alive){continue;}
-        threads.emplace_back([&](){
-            httplib::Client cli(peer.host,peer.port);
-            cli.set_connection_timeout(1,0);
+        httplib::Client cli(peer.host,peer.port);
+        cli.set_connection_timeout(1,0);
 
-            nlohmann::json payload={
-                {"key", key},
-                {"value", value},
-                {"ttl", ttl}
-            };
-            auto res=cli.Post("/replicate",payload.dump(),"application/json"); 
-            if(res&&res->status==200){  //if 200 status code received then add the acks that data is shared to replica
-                successfull_acks.fetch_add(1);
-            }
-        });
-    }
-    for(auto &t:threads){
-        if(t.joinable()){
-            t.join(); //wait for all the replication threads to complete before checking quorum
-            //wait here until the thread finishes
+        nlohmann::json payload={
+            {"key", key},
+            {"value", value},
+            {"ttl", ttl}
+        };
+        auto res=cli.Post("/replicate",payload.dump(),"application/json"); 
+        if(res&&res->status==200){  //if 200 status code received then add the acks that data is shared to replica
+            successfull_acks++;
         }
     }
-    return successfull_acks.load()>=quorum_required;
+    return successfull_acks >= quorum_required;
 }
 
 bool ReplicationManager::replicateDel(const std::string &key){
@@ -73,20 +64,18 @@ bool ReplicationManager::replicateDel(const std::string &key){
         target_peers=peers; //list of replica servers
     }
     if(target_peers.empty()){return true;} //no replica server no deletion 
-    std::vector<std::thread> threads;
     for(const auto& peer:target_peers){
         if(!peer.is_alive){continue;}
-        threads.emplace_back([&](){
-            httplib::Client cli(peer.host,peer.port);
-            cli.set_connection_timeout(1,0);
-            cli.Delete(("/cache/" + key).c_str());
-        });
+        httplib::Client cli(peer.host,peer.port);
+        cli.set_connection_timeout(1,0);
+        cli.Delete(("/cache/" + key).c_str());
     }
-    for(auto &t:threads){
-        if(t.joinable()){
-            t.join(); //continue after all the replicas have received the delete request
-        }
-    }return true;
+    return true;
+}
+
+void ReplicationManager::clearPeers() {
+    std::lock_guard<std::mutex> lock(mtx);
+    peers.clear();
 }
 
 nlohmann::json ReplicationManager::getPeers() const {

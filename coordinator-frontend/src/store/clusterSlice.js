@@ -1,11 +1,6 @@
-//create redux store its the memory/db for the frontend
-import { configureStore } from "@reduxjs/toolkit";
-import clusterReducer from "./clusterSlice";
-import authReducer from "./authSlice";
+import { createSlice } from "@reduxjs/toolkit";
 
-//initial state
 const clusterSlice = createSlice({
-  //initial all empty
   name: "cluster",
   initialState: {
     nodes: [],
@@ -14,7 +9,6 @@ const clusterSlice = createSlice({
       latency: [],
     },
   },
-  //reducers are the only functions allowed to write in out global network
   reducers: {
     setNodes: (state, action) => {
       state.nodes = action.payload; //reset eveything
@@ -24,7 +18,7 @@ const clusterSlice = createSlice({
         (n) => n.nodeId === action.payload.nodeId,
       );
       if (idx != -1) {
-        state.nodes[idx] = action.payload(); //if the idx is present then update existing
+        state.nodes[idx] = action.payload; //if the idx is present then update existing
       } else {
         state.nodes.push(action.payload); //add new
       }

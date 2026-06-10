@@ -40,7 +40,7 @@ nlohmann::json CacheStore::set(const std::string& key, const std::string& val, i
     }
     //for the max size then lru eviction and addition of new
     if(cache_map.size()>=max_size){
-        std::string evicted_key=lru.removelast(); //last ele remove
+        std::string evicted_key=lru.removeLast(); //last ele remove
         if(!evicted_key.empty()){
             cache_map.erase(evicted_key);
             stats.recordEviction();
@@ -93,7 +93,7 @@ size_t CacheStore::size() const{
 int CacheStore::cleanupExpired(){
     std::lock_guard<std::mutex>lock(mtx);
     int count=0; //how many expired entries delete hui h 
-    auto& lst=lru.getList(); //returns the actual lru list 
+    auto& lst=lru.getlist(); //returns the actual lru list 
     auto it=lst.begin();
     while(it!=lst.end()){
         auto current=it;

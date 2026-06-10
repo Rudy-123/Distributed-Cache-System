@@ -52,6 +52,7 @@ class HashRing {
     if (left == this.sortedKeys.length) {
       return this.ring.get(this.sortedKeys[0]); //wrap around circular property so ring implemented
     }
+    return this.ring.get(this.sortedKeys[left]);
   }
   _hash(str) {
     //string to number

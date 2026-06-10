@@ -21,6 +21,7 @@ class ReplicationManager{
         bool replicateSet(const std::string& key,const std::string& value,int ttl); //replication from the master to slaves
         bool replicateDel(const std::string& key); //master deleted and sends the req to do same to the slaves
 
+        void clearPeers();
         nlohmann::json getPeers() const; //return all replicas
 
     private:

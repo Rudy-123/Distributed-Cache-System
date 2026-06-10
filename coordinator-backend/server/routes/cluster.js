@@ -16,7 +16,7 @@ router.get("/status", protect, async (req, res) => {
 });
 
 //add node
-router.post("/nodes", protech, async (req, res) => {
+router.post("/nodes", protect, async (req, res) => {
   const { nodeId, host, port, role } = req.body;
   try {
     const node = await NodeConfig.create({ nodeId, host, port, role });

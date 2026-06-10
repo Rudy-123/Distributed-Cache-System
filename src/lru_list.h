@@ -18,6 +18,7 @@ class LRUList{
         bool empty () const;
         size_t size() const;
         void clear();
+        ListType& getlist() {return lst;}
         const ListType& getlist() const {return lst;}
     
     private:

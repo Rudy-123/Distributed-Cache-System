@@ -17,6 +17,8 @@ const NodeConfigSchema = new mongoose.Schema(
     lastHeartbeat: { type: Date, default: Date.now() },
     uptime: { type: Number, default: 0 },
     keysCount: { type: Number, default: 0 }, //how many cache entries in the node
+    queriesCount: { type: Number, default: 0 }, // actual queries processed count
+    replicationLag: { type: Number, default: 0 }, // actual network/replication latency in ms
   },
   { timestamps: true },
 );

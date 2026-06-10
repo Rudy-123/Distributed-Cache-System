@@ -4,10 +4,11 @@
 
 HttpServer::HttpServer(std::shared_ptr<CacheStore> store,   //cache address
                     std::shared_ptr<ReplicationManager> replication, //Replicationmanager address
-                    std::shared_ptr<Heartbeat> hb, //heartbeat address
+                    std::shared_ptr<HeartBeat> hb, //heartbeat address
                     int port, //servers port
                     const std::string& role)
         :cache(store),repl_mgr(replication),heartbeat(hb),server_port(port),server_role(role),
+        start_time(std::chrono::steady_clock::now()),
         svr(std::make_unique<httplib::Server>()){}
 
 HttpServer::~HttpServer(){
@@ -18,10 +19,13 @@ void HttpServer::setupRoutes(){ //which url,which req and what action
     //svr points to the server object
     //get health
     svr->Get("/health",[this](const httplib::Request&, httplib::Response& res){ //(req,res)
+        auto now = std::chrono::steady_clock::now();
+        auto uptime_seconds = std::chrono::duration_cast<std::chrono::seconds>(now - start_time).count();
         nlohmann::json health = {
             {"status", "healthy"},
             {"role", server_role},
-            {"keys", cache->size()}
+            {"keys", cache->size()},
+            {"uptime", uptime_seconds}
         };
         res.set_content(health.dump(), "application/json"); //data sent is of json form
     });
@@ -72,7 +76,7 @@ void HttpServer::setupRoutes(){ //which url,which req and what action
         std::string key=req.matches[1]; //extract the key from url 
         auto local_res=cache->del(key);
         if(server_role=="master"){
-            repl_mgr=replicateDel(key); //sends req to delete the value present at this key to the slaves
+            repl_mgr->replicateDel(key); //sends req to delete the value present at this key to the slaves
         }
         res.set_content(local_res.dump(),"application/json");
     });
@@ -95,6 +99,34 @@ void HttpServer::setupRoutes(){ //which url,which req and what action
             res.status=400;
             res.set_content(nlohmann::json{{"error",e.what()}}.dump(),"application/json");
         }
+    });
+
+    // Dynamic peer registration endpoint for Master node
+    svr->Post("/peers", [this](const httplib::Request& req, httplib::Response& res) {
+        if (server_role != "master") {
+            res.status = 403;
+            res.set_content(R"({"error":"Only master nodes accept new replication peers"})", "application/json");
+            return;
+        }
+        try {
+            auto body = nlohmann::json::parse(req.body);
+            std::string host = body.at("host");
+            int port = body.at("port");
+            repl_mgr->addPeer(host, port);
+            std::cout << "[DYNAMIC PEER] Registered replica peer: " << host << ":" << port << std::endl;
+            res.set_content(R"({"status":"peer_registered"})", "application/json");
+        } catch (const std::exception& e) {
+            res.status = 400;
+            res.set_content(nlohmann::json{{"error", e.what()}}.dump(), "application/json");
+        }
+    });
+
+    // Promotion endpoint to turn a replica into master dynamically
+    svr->Post("/promote", [this](const httplib::Request&, httplib::Response& res) {
+        server_role = "master";
+        repl_mgr->clearPeers();
+        std::cout << "[PROMOTE] Node on port " << server_port << " promoted to MASTER" << std::endl;
+        res.set_content(R"({"status":"promoted","role":"master"})", "application/json");
     });
 }
 
