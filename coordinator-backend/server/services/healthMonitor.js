@@ -88,11 +88,22 @@ const checkNodesHealth = async (io) => {
         node.lastHeartbeat = new Date();
         await node.save();
 
+        // Ensure healthy master nodes are always in the Hash Ring
+        const isNodeInRing = Array.from(hashRing.ring.values()).some((n) => n.nodeId === node.nodeId);
+        if (node.role === "master" && !isNodeInRing) {
+          console.log(`[HEALTH MONITOR] Master node ${node.nodeId} is healthy but not in Hash Ring. Adding...`);
+          hashRing.addNode(node);
+        }
+
         // If status or role changed, synchronize with Hash Ring
         if (oldStatus !== "healthy" || oldRole !== node.role) {
           hashRing.removeNode(node.nodeId);
           if (node.role === "master") {
-            hashRing.addNode(node);
+            // Check if already added above to avoid duplicate addition
+            const isAdded = Array.from(hashRing.ring.values()).some((n) => n.nodeId === node.nodeId);
+            if (!isAdded) {
+              hashRing.addNode(node);
+            }
           } else if (node.role === "replica") {
             // Re-sync replica on Master when it recovers or registers
             const master = await NodeConfig.findOne({

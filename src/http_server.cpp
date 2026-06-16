@@ -1,6 +1,8 @@
 #include "../include/httplib.h"
 #include "http_server.h"
 #include <iostream>
+#include <thread>
+#include <chrono>
 
 HttpServer::HttpServer(std::shared_ptr<CacheStore> store,   //cache address
                     std::shared_ptr<ReplicationManager> replication, //Replicationmanager address
@@ -56,13 +58,12 @@ void HttpServer::setupRoutes(){ //which url,which req and what action
             int ttl=body.value("ttl",0);
             auto local_res=cache->set(key,value,ttl); //save the entry in the cache store
             if(server_role=="master"){
-                //sends the http req to the slaves 
-                bool quorum_ok=repl_mgr->replicateSet(key,value,ttl); //only the master accepts the writes so replicate the data got
-                if(!quorum_ok){
-                    res.status=500;
-                    res.set_content(R"({"status":"replication_failure"})","application/json");
-                    return ;
-                }
+                // Launch replication in a background thread asynchronously (Asynchronous Replication)
+                std::thread([this, key, value, ttl]() {
+                    // 1500ms delay to simulate network latency and let the user see the replication lag
+                    std::this_thread::sleep_for(std::chrono::milliseconds(1500));
+                    repl_mgr->replicateSet(key, value, ttl);
+                }).detach();
             }
             res.set_content(local_res.dump(),"application/json");
         }catch(const std::exception& e){
@@ -76,7 +77,11 @@ void HttpServer::setupRoutes(){ //which url,which req and what action
         std::string key=req.matches[1]; //extract the key from url 
         auto local_res=cache->del(key);
         if(server_role=="master"){
-            repl_mgr->replicateDel(key); //sends req to delete the value present at this key to the slaves
+            // Launch deletion in a background thread asynchronously (Asynchronous Replication)
+            std::thread([this, key]() {
+                std::this_thread::sleep_for(std::chrono::milliseconds(1500));
+                repl_mgr->replicateDel(key);
+            }).detach();
         }
         res.set_content(local_res.dump(),"application/json");
     });

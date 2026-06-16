@@ -12,7 +12,14 @@ router.post("/", protect, async (req, res) => {
     return res.status(400).json({ error: "Key and Value are reuqired" });
   }
   const start = Date.now(); //use this further
-  const targetNode = hashRing.getNode(key); //hashes the key and looks ar the ring to decide which node would store it
+  let targetNode = hashRing.getNode(key); //hashes the key and looks ar the ring to decide which node would store it
+  if (!targetNode) {
+    console.log(`[HASH RING FALLBACK] Ring was empty. Dynamically fetching healthy master nodes from DB...`);
+    const NodeConfig = require("../models/NodeConfig");
+    const healthyMasters = await NodeConfig.find({ role: "master", status: "healthy" });
+    healthyMasters.forEach((n) => hashRing.addNode(n));
+    targetNode = hashRing.getNode(key);
+  }
   if (!targetNode) {
     return res.status(503).json({ error: "No healthy cache nodes available" });
   }
@@ -43,7 +50,14 @@ router.get("/:key", protect, async (req, res) => {
   //get specific item
   const { key } = req.params;
   const start = Date.now();
-  const targetNode = hashRing.getNode(key);
+  let targetNode = hashRing.getNode(key);
+  if (!targetNode) {
+    console.log(`[HASH RING FALLBACK] Ring was empty. Dynamically fetching healthy master nodes from DB...`);
+    const NodeConfig = require("../models/NodeConfig");
+    const healthyMasters = await NodeConfig.find({ role: "master", status: "healthy" });
+    healthyMasters.forEach((n) => hashRing.addNode(n));
+    targetNode = hashRing.getNode(key);
+  }
   if (!targetNode) {
     return res.status(503).json({ error: "No healthy cache nodes avalable" });
   }
@@ -71,7 +85,14 @@ router.get("/:key", protect, async (req, res) => {
 router.delete("/:key", protect, async (req, res) => {
   const { key } = req.params;
   const start = Date.now();
-  const targetNode = hashRing.getNode(key);
+  let targetNode = hashRing.getNode(key);
+  if (!targetNode) {
+    console.log(`[HASH RING FALLBACK] Ring was empty. Dynamically fetching healthy master nodes from DB...`);
+    const NodeConfig = require("../models/NodeConfig");
+    const healthyMasters = await NodeConfig.find({ role: "master", status: "healthy" });
+    healthyMasters.forEach((n) => hashRing.addNode(n));
+    targetNode = hashRing.getNode(key);
+  }
   if (!targetNode) {
     return res.status(503).json({ error: "No healthy cache nodes available" });
   }
