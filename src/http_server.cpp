@@ -27,7 +27,8 @@ void HttpServer::setupRoutes(){ //which url,which req and what action
             {"status", "healthy"},
             {"role", server_role},
             {"keys", cache->size()},
-            {"uptime", uptime_seconds}
+            {"uptime", uptime_seconds},
+            {"offset", replication_offset.load()}
         };
         res.set_content(health.dump(), "application/json"); //data sent is of json form
     });
@@ -57,6 +58,7 @@ void HttpServer::setupRoutes(){ //which url,which req and what action
             std::string value=body.at("value");
             int ttl=body.value("ttl",0);
             auto local_res=cache->set(key,value,ttl); //save the entry in the cache store
+            replication_offset++;
             if(server_role=="master"){
                 // Launch replication in a background thread asynchronously (Asynchronous Replication)
                 std::thread([this, key, value, ttl]() {
@@ -76,6 +78,7 @@ void HttpServer::setupRoutes(){ //which url,which req and what action
     svr->Delete("/cache/([^/]+)",[this](const httplib::Request& req,httplib::Response& res){
         std::string key=req.matches[1]; //extract the key from url 
         auto local_res=cache->del(key);
+        replication_offset++;
         if(server_role=="master"){
             // Launch deletion in a background thread asynchronously (Asynchronous Replication)
             std::thread([this, key]() {
@@ -99,6 +102,7 @@ void HttpServer::setupRoutes(){ //which url,which req and what action
             std::string value=body.at("value");
             int ttl=body.value("ttl",0);
             auto local_res=cache->set(key,value,ttl); //stroe in replica cache
+            replication_offset++;
             res.set_content(local_res.dump(),"application/json");
         }catch(const std::exception &e){   
             res.status=400;

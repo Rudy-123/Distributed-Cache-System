@@ -17,7 +17,7 @@ class failoverManager {
       shardId: deadMaster.shardId,
       role: "replica",
       status: "healthy",
-    }).sort({ uptime: -1 }); //sort in the descending order so that we can pick the most stable replica and make it as the master
+    }).sort({ replicationOffset: -1, uptime: -1 }); // Priority 1: Data offset, Priority 2: Uptime
 
     if (!candidate) {
       console.error(

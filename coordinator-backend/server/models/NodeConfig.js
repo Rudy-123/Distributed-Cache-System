@@ -20,6 +20,7 @@ const NodeConfigSchema = new mongoose.Schema(
     keysCount: { type: Number, default: 0 }, //how many cache entries in the node
     queriesCount: { type: Number, default: 0 }, // actual queries processed count
     replicationLag: { type: Number, default: 0 }, // actual network/replication latency in ms
+    replicationOffset: { type: Number, default: 0 }, // C++ data offset
   },
   { timestamps: true },
 );

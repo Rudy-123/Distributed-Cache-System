@@ -41,6 +41,7 @@ const checkNodesHealth = async (io) => {
             keysCount: res.data.keys || 0,
             queriesCount: 0,
             replicationLag: latency,
+            replicationOffset: res.data.offset || 0,
             lastHeartbeat: new Date(),
           });
 
@@ -81,6 +82,7 @@ const checkNodesHealth = async (io) => {
         node.role = res.data.role || node.role; // Dynamically sync active role from C++ node
         node.uptime = res.data.uptime;
         node.keysCount = res.data.keys || 0;
+        node.replicationOffset = res.data.offset || 0;
         node.replicationLag = latency; // Set actual measured latency
 
         const AccessLog = require("../models/AccessLog");

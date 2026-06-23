@@ -7,9 +7,12 @@
 #include <mutex>
 #include <utility>
 
+#include "replication_manager.h"
+#include <memory>
+
 class HeartBeat{
     public: 
-        explicit HeartBeat(const std::vector<std::pair<std::string,int>>&peers);
+        explicit HeartBeat(const std::vector<std::pair<std::string,int>>&peers, std::shared_ptr<ReplicationManager> repl_mgr = nullptr);
         ~HeartBeat();
         void start();
         void stop();
@@ -22,4 +25,5 @@ class HeartBeat{
         std::thread hb_thread; //this thread will execute run() function
         std::atomic<bool> running{false};
         mutable std::mutex mtx;
+        std::shared_ptr<ReplicationManager> repl_mgr;
 };  

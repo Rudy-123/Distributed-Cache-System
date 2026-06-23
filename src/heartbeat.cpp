@@ -3,8 +3,8 @@
 #include <chrono>
 #include <iostream>
 
-HeartBeat::HeartBeat(const std::vector<std::pair<std::string,int>>&peers)
-        :peer_addresses(peers),peer_states(peers.size(),true){}
+HeartBeat::HeartBeat(const std::vector<std::pair<std::string,int>>&peers, std::shared_ptr<ReplicationManager> repl_mgr)
+        :peer_addresses(peers),peer_states(peers.size(),true),repl_mgr(repl_mgr){}
 
 HeartBeat:: ~HeartBeat(){
     stop();
@@ -47,6 +47,9 @@ void HeartBeat::run(){
                 std::lock_guard<std::mutex>lock(mtx); //update the state 
                 if(peer_states[i]!=is_healthy){  
                     peer_states[i]=is_healthy; 
+                    if(repl_mgr) {
+                        repl_mgr->UpdatePeerStatus(addr.first, addr.second, is_healthy);
+                    }
                     std::cout << "[Heartbeat] Peer " << addr.first << ":" << addr.second 
                               << " changed status to: " << (is_healthy ? "ALIVE" : "DEAD") << std::endl;
                 }

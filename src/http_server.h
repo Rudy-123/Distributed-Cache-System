@@ -32,4 +32,5 @@ class HttpServer{
         std::string server_role;
         std::chrono::steady_clock::time_point start_time;
         std::unique_ptr<httplib::Server> svr;
+        std::atomic<uint64_t> replication_offset{0}; // Track number of writes processed
 };
