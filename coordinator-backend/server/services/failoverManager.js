@@ -12,8 +12,9 @@ class failoverManager {
     );
     hashRing.removeNode(deadMaster.nodeId);
 
-    // Find the candidate replica with the highest uptime
+    // Find the candidate replica with the highest uptime inside the same shard
     const candidate = await NodeConfig.findOne({
+      shardId: deadMaster.shardId,
       role: "replica",
       status: "healthy",
     }).sort({ uptime: -1 }); //sort in the descending order so that we can pick the most stable replica and make it as the master
@@ -36,8 +37,9 @@ class failoverManager {
         { timeout: 1500 },
       );
 
-      //Fetch all other healthy replica nodes to register them as peers to the new master
+      //Fetch all other healthy replica nodes within the same shard to register them as peers to the new master
       const otherReplicas = await NodeConfig.find({
+        shardId: deadMaster.shardId,
         role: "replica",
         status: "healthy",
         nodeId: { $ne: candidate.nodeId },

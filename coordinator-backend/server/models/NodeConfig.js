@@ -8,6 +8,7 @@ const NodeConfigSchema = new mongoose.Schema(
     nodeId: { type: String, required: true, unique: true },
     host: { type: String, required: true },
     port: { type: Number, required: true },
+    shardId: { type: String, default: "shard-1" }, // Grouping 1 master + N replicas
     role: { type: String, enum: ["master", "replica"], default: "replica" }, //enum means only 2 values are allowed
     status: {
       type: String,

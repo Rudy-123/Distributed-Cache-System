@@ -25,14 +25,16 @@ const checkNodesHealth = async (io) => {
         let node = await NodeConfig.findOne({ port: port });
         if (!node) {
           const role = res.data.role || "replica";
+          const shardId = res.data.shardId || "shard-1";
           const nodeId = `node-${port}`;
           console.log(
-            `[AUTO-DISCOVERY] Found running cache node on port ${port}. Registering...`,
+            `[AUTO-DISCOVERY] Found running cache node on port ${port} (Shard: ${shardId}). Registering...`,
           );
           node = await NodeConfig.create({
             nodeId: nodeId,
             host: "127.0.0.1",
             port: port,
+            shardId: shardId,
             role: role,
             status: "healthy",
             uptime: res.data.uptime || 0,
@@ -47,6 +49,7 @@ const checkNodesHealth = async (io) => {
             const master = await NodeConfig.findOne({
               role: "master",
               status: "healthy",
+              shardId: shardId
             });
             if (master) {
               try {
@@ -88,27 +91,28 @@ const checkNodesHealth = async (io) => {
         node.lastHeartbeat = new Date();
         await node.save();
 
-        // Ensure healthy master nodes are always in the Hash Ring
-        const isNodeInRing = Array.from(hashRing.ring.values()).some((n) => n.nodeId === node.nodeId);
-        if (node.role === "master" && !isNodeInRing) {
-          console.log(`[HEALTH MONITOR] Master node ${node.nodeId} is healthy but not in Hash Ring. Adding...`);
+        // Ensure healthy nodes are always in the Hash Ring (Topology Table)
+        const isNodeInRing = Array.from(hashRing.topologyTable.values()).some(shard => 
+          (shard.master && shard.master.nodeId === node.nodeId) || 
+          shard.replicas.some(r => r.nodeId === node.nodeId)
+        );
+        if (!isNodeInRing) {
+          console.log(`[HEALTH MONITOR] Node ${node.nodeId} is healthy but not in Hash Ring. Adding...`);
+          hashRing.addNode(node);
+        } else {
+          // Always update node in hash ring to reflect real-time replicationLag changes
           hashRing.addNode(node);
         }
 
-        // If status or role changed, synchronize with Hash Ring
         if (oldStatus !== "healthy" || oldRole !== node.role) {
           hashRing.removeNode(node.nodeId);
-          if (node.role === "master") {
-            // Check if already added above to avoid duplicate addition
-            const isAdded = Array.from(hashRing.ring.values()).some((n) => n.nodeId === node.nodeId);
-            if (!isAdded) {
-              hashRing.addNode(node);
-            }
-          } else if (node.role === "replica") {
+          hashRing.addNode(node); // addNode will appropriately place it as master/replica in the topology
+          if (node.role === "replica") {
             // Re-sync replica on Master when it recovers or registers
             const master = await NodeConfig.findOne({
               role: "master",
               status: "healthy",
+              shardId: node.shardId
             });
             if (master) {
               try {
@@ -149,11 +153,37 @@ const startHealthMonitor = (io) => {
   NodeConfig.find({}).then((nodes) => {
     //sync the hashring
     nodes.forEach((n) => {
-      if (n.status === "healthy" && n.role === "master") {
-        hashRing.addNode(n);
+      if (n.status === "healthy") {
+        hashRing.addNode(n); // HashRing internally handles routing it to master or replica list
       }
     });
   });
+  
+  // Listen for MongoDB Change Streams to sync HashRing across multiple Node.js instances
+  try {
+    const changeStream = NodeConfig.watch();
+    changeStream.on("change", async (change) => {
+      try {
+        if (["insert", "update", "replace"].includes(change.operationType)) {
+          const docId = change.documentKey._id;
+          const updatedNode = await NodeConfig.findById(docId);
+          if (updatedNode) {
+            if (updatedNode.status === "healthy") {
+              hashRing.removeNode(updatedNode.nodeId);
+              hashRing.addNode(updatedNode);
+            } else {
+              hashRing.removeNode(updatedNode.nodeId);
+            }
+          }
+        }
+      } catch (e) {
+        console.error("Error processing change stream event:", e.message);
+      }
+    });
+  } catch (err) {
+    console.log("[WARNING] MongoDB Change Streams not supported (requires Replica Set). Relying on interval polling.");
+  }
+
   setInterval(() => checkNodesHealth(io), 5000);
 
   // Aggregator loop: Queries AccessLog database every 2 seconds to calculate real-time QPS and latency
