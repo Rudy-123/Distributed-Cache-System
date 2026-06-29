@@ -1,39 +1,37 @@
-# 🚀 High-Performance Distributed Cache System
+# High-Performance Distributed Cache System
 
-### A Blazing-Fast, Sharded, and Fault-Tolerant In-Memory Data Grid
-
----
-
-## 🌟 The Vision
-
-Most caching systems work fine under normal loads, but they crumble when tested with massive concurrency, node failures, or clock drifts. **We didn't just build a cache; we engineered a resilient, decentralized data grid from scratch.**
-
-This Distributed Cache System is an extraordinary, high-availability in-memory engine designed to deliver **O(1) data retrieval** across distributed nodes. Built for massive scale, it features an intelligent **sharded primary-replica architecture** that guarantees fault tolerance, seamless replication, and infinite horizontal scalability. 
-
-Whether it's surviving sudden "live node kills" with zero failed client requests, or managing memory efficiently under heavy pressure, this system handles it effortlessly.
-
-Equipped with a custom-built **C++ Cache Engine**, an asynchronous **Node.js Coordinator**, and a sleek **React Web Interface**, it marries raw backend muscle with effortless observability.
+### Scalable, Fault-Tolerant In-Memory Data Grid with Sharding
 
 ---
 
-## 🔥 Hardcore Engineering & Optimizations
+## 📖 Project Overview
 
-We went beyond the basics to push the limits of performance and reliability:
+**Distributed Cache System** is a robust, high-availability in-memory caching solution designed to provide low-latency data retrieval across distributed nodes. Built to handle massive scale, it features a sharded primary-replica architecture for fault tolerance, seamless data synchronization, and horizontal scalability.
 
-- ⚡ **O(1) Read Operations & Precomputed Replicas:** We eliminated runtime overhead by precomputing replica node mappings. Reads are instant. Period.
-- 📉 **O(log N) Shard Addition:** Scaling horizontally shouldn't be a bottleneck. By optimizing our internal data structures, adding a new shard dynamically went from O(N) to an ultra-fast O(log N).
-- ⏱️ **<50ms Replication Lag:** Master nodes stream state to replicas asynchronously, achieving near-instantaneous consistency with sub-50ms lag.
-- 🛡️ **Zero-Downtime "Live Kill" Survivability:** What happens when a Master node dies mid-traffic? Nothing. Our Node.js Coordinator implements intelligent client-side retries. It catches the drop, waits for the C++ cluster to elect a new Master, and retries seamlessly. **Zero failed requests from the user's perspective.**
-- 🕒 **Drift-Proof Consistent TTLs:** We don't rely on replica clocks to expire data. The Master centrally governs TTLs and pushes `DEL` commands, ensuring absolute consistency across the shard.
-- 🧠 **Custom C++ LRU Eviction Engine:** When memory maxes out, our custom-built Hash Map combined with a Doubly Linked List kicks in, executing strict, highly-optimized Least Recently Used (LRU) evictions to maintain peak performance.
+Instead of relying on single-node caching bottlenecks, this platform offers a decentralized caching grid partitioned into multiple shards, each with automatic replication. It empowers applications to achieve sub-millisecond latencies, reduce database load, and scale horizontally by distributing data evenly across the cluster.
+
+Equipped with a highly optimized **C++ Cache Engine**, a **Node.js Coordinator Backend**, and an intuitive **React Web Interface**, it provides both performance and effective cluster management.
+
+---
+
+## ⚙️ Key Optimizations
+
+The system incorporates several architectural optimizations to ensure peak performance and strict consistency:
+
+- **O(1) Read Operations:** Eliminated runtime routing overhead by precomputing replica node mappings, ensuring read operations maintain O(1) time complexity.
+- **O(log N) Shard Addition:** Optimized internal data structures to reduce the time complexity of adding a new shard dynamically from O(N) to O(log N).
+- **Sub-50ms Replication Lag:** Master nodes stream state changes to replicas asynchronously, achieving near-instantaneous consistency with less than 50ms of replication lag.
+- **Zero-Downtime Resilience:** The Node.js Coordinator implements intelligent client-side retry blocks. If a Master node fails mid-traffic, the coordinator waits for the C++ cluster to elect a new Master and seamlessly retries, guaranteeing zero failed requests from the client's perspective.
+- **Consistent TTL Management:** To prevent clock-drift issues, replica nodes do not expire keys independently. The Master centrally governs TTLs and issues `DEL` commands, ensuring strict data consistency across the shard.
+- **Custom LFU Eviction:** Implemented a custom C++ memory management system utilizing a Hash Map combined with frequency tracking to execute strict Least Frequently Used (LFU) evictions under high memory pressure.
 
 ---
 
 ## 🏗️ System Architecture
 
-The system is partitioned into **multiple shards**, ensuring infinite horizontal scalability. Each shard autonomously manages its own Master and Replicas, completely removing single points of failure.
+The application utilizes a distributed architecture, seamlessly integrating high-speed C++ caching nodes with a robust backend coordinator and a responsive UI. The caching layer is partitioned into **multiple shards**, ensuring horizontal scalability.
 
-### Sharded Master-Replica Topology
+### High-Level Architecture (Sharded Master-Replica)
 
 ```mermaid
 graph TD
@@ -43,28 +41,28 @@ graph TD
     classDef cacheReplica fill:#e8f5e9,stroke:#1b5e20,stroke-width:2px,color:#000;
     classDef userNode fill:#f3e5f5,stroke:#4a148c,stroke-width:2px,color:#000;
 
-    User((👤 User / Client)):::userNode
+    User((User / Client)):::userNode
 
     subgraph Frontend
-        WebApp[💻 React Web UI<br/><i>Vite + Nginx</i>]:::frontend
+        WebApp[React Web UI<br/><i>Vite + Nginx</i>]:::frontend
     end
 
     subgraph Backend
-        Coordinator[⚙️ Node.js Backend<br/><i>Intelligent Router & Coordinator</i>]:::backend
+        Coordinator[Node.js Backend<br/><i>Cache Coordinator & Router</i>]:::backend
     end
 
     subgraph C++_Cache_Engine ["C++ Distributed Cache Grid"]
         direction TB
         subgraph Shard_1 ["Shard 1 (Keys A-M)"]
-            Master1[⚡ Master 1<br/><i>Port 5051</i>]:::cacheMaster
-            Replica1A[🔄 Replica 1A<br/><i>Port 5052</i>]:::cacheReplica
-            Replica1B[🔄 Replica 1B<br/><i>Port 5053</i>]:::cacheReplica
+            Master1[Master 1<br/><i>Port 5051</i>]:::cacheMaster
+            Replica1A[Replica 1A<br/><i>Port 5052</i>]:::cacheReplica
+            Replica1B[Replica 1B<br/><i>Port 5053</i>]:::cacheReplica
         end
 
         subgraph Shard_2 ["Shard 2 (Keys N-Z)"]
-            Master2[⚡ Master 2<br/><i>Port 5061</i>]:::cacheMaster
-            Replica2A[🔄 Replica 2A<br/><i>Port 5062</i>]:::cacheReplica
-            Replica2B[🔄 Replica 2B<br/><i>Port 5063</i>]:::cacheReplica
+            Master2[Master 2<br/><i>Port 5061</i>]:::cacheMaster
+            Replica2A[Replica 2A<br/><i>Port 5062</i>]:::cacheReplica
+            Replica2B[Replica 2B<br/><i>Port 5063</i>]:::cacheReplica
         end
     end
 
@@ -73,53 +71,53 @@ graph TD
     
     %% Coordinator routing to Shard 1
     Coordinator -->|Hash Key| Master1
-    Master1 -->|Stream Data < 50ms| Replica1A
-    Master1 -->|Stream Data < 50ms| Replica1B
-    Coordinator -.->|O1 Reads| Replica1A
-    Coordinator -.->|O1 Reads| Replica1B
+    Master1 -->|Stream Data| Replica1A
+    Master1 -->|Stream Data| Replica1B
+    Coordinator -.->|Reads| Replica1A
+    Coordinator -.->|Reads| Replica1B
     
     %% Coordinator routing to Shard 2
     Coordinator -->|Hash Key| Master2
-    Master2 -->|Stream Data < 50ms| Replica2A
-    Master2 -->|Stream Data < 50ms| Replica2B
-    Coordinator -.->|O1 Reads| Replica2A
-    Coordinator -.->|O1 Reads| Replica2B
+    Master2 -->|Stream Data| Replica2A
+    Master2 -->|Stream Data| Replica2B
+    Coordinator -.->|Reads| Replica2A
+    Coordinator -.->|Reads| Replica2B
 ```
 
 ---
 
-## 🔄 The Data Workflow
+## 🔄 Data Workflow
 
-Here’s the lifecycle of a blisteringly fast cache operation:
+The lifecycle of a cache operation follows a strict, highly available path:
 
-1. **Client Sends Request**: Write or read command is issued via the API.
-2. **Coordinator Hashes Key**: The backend determines the correct Shard in O(1) time.
-3. **Smart Routing**:
-   - **Writes** hit the specific **Shard's Master**.
-   - **Reads** are instantly load-balanced across the **Shard's precomputed Replicas**.
-4. **Master Processes & Replicates**: The Master updates its custom Hash Map and asynchronously streams the state to Replicas (sub-50ms lag).
-5. **Dashboard Updates**: The frontend dynamically visualizes the heartbeat and metrics of the living cluster.
-
----
-
-## 🛠️ Key Features at a Glance
-
-| Feature                   | Implementation      | Benefit                        |
-| ------------------------- | ------------------- | ------------------------------ |
-| **Instant Data Access**   | O(1) C++ Hash Map   | Sub-millisecond latency        |
-| **Infinite Scaling**      | O(log N) Sharding   | Add capacity dynamically       |
-| **Bulletproof Reliability**| Master-Replica Sync| Zero-Downtime survivability    |
-| **Smart Routing**         | Node.js Coordinator | Optimized read/write splitting |
-| **Observability**         | React Web UI        | Real-time cluster monitoring   |
+1. **Client Request**: A write or read command is issued via the API.
+2. **Key Hashing**: The coordinator backend determines the correct Shard based on the key's hash.
+3. **Traffic Routing**:
+   - **Writes** are directed to the specific **Shard's Master**.
+   - **Reads** are load-balanced across the **Shard's Replicas**.
+4. **Processing & Replication**: The Master updates its internal Hash Map and asynchronously streams the state to Replicas to ensure fault tolerance.
+5. **Dashboard Visualization**: The frontend dynamically fetches and visualizes the cluster's heartbeat and operational metrics.
 
 ---
 
 ## 💻 Tech Stack
 
-- **Core Engine:** Modern C++ (Custom TCP/HTTP, HashMap + Doubly Linked List LRU)
-- **Coordinator Router:** Node.js, Express (Asynchronous I/O, Client-side retry logic)
-- **Frontend Dashboard:** React, Vite, Nginx, TailwindCSS
-- **Infrastructure:** Docker & Docker Compose (Containerized for seamless one-click scaling)
+### Frontend
+- **Framework:** React + Vite
+- **Server:** Nginx
+- **Styling:** CSS3 / TailwindCSS
+
+### Backend
+- **Runtime:** Node.js, Express
+- **Architecture:** API Coordinator & Shard Router
+
+### Cache Engine
+- **Language:** C++17/C++20
+- **Networking:** Custom TCP/HTTP Engine
+- **Data Structures:** Highly optimized concurrent hash maps (O(1) access, LFU eviction)
+
+### Infrastructure
+- **Containerization:** Docker & Docker Compose
 
 ---
 
@@ -132,24 +130,24 @@ git clone https://github.com/Rudy-123/Distributed-Cache-System.git
 cd Distributed_Cache_System
 ```
 
-### 2. Launch the Grid
+### 2. Deployment (Docker Compose)
 
-Spin up the entire cluster (Frontend, Backend, and multiple C++ Cache Shards) with a single command:
+The easiest way to spin up the entire cluster (Frontend, Backend, and multiple C++ Cache Nodes) is using Docker Compose:
 
 ```bash
 docker-compose up --build -d
 ```
-*(Pro-tip: Want to test the auto-failover? Try killing a Master container mid-request and watch the coordinator flawlessly retry!)*
+*(Note: To scale up shards, modify `docker-compose.yml` to spin up more masters and replicas, and update the backend's routing configuration).*
 
-### 3. Verify Health
+### 3. Verify Services
 
-Ensure all nodes are pulsating:
+Ensure all containers are running successfully:
 
 ```bash
 docker-compose ps
 ```
 
-### 4. Access the Ecosystem
+### 4. Access the Application
 
 - **Frontend Dashboard:** `http://localhost:3000`
 - **Coordinator API:** `http://localhost:5000`
@@ -159,22 +157,17 @@ docker-compose ps
 
 ## 🤝 Contributing
 
-We welcome engineers who love squeezing every last drop of performance out of systems!
+Contributions are welcome.
 
 1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Add tests & documentation
-4. Commit your changes (`git commit -m 'Add some amazing feature'`)
+2. Create a feature branch (`git checkout -b feature/new-feature`)
+3. Add tests and necessary documentation
+4. Commit your changes (`git commit -m 'Add new feature'`)
 5. Submit a pull request
 
 ---
 
 ## 📄 License
 
-This project is licensed under the **MIT License**. See `LICENSE` file for more details.
-
----
-
-## ⭐ Acknowledgements
-
-Built with ❤️ to push the boundaries of high-performance distributed systems, low-latency C++ engineering, and zero-downtime microservices architectures.
+This project is licensed under the **MIT License**.
+See `LICENSE` file for more details.
