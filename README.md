@@ -2,8 +2,6 @@
 
 ### Scalable, Fault-Tolerant In-Memory Data Grid
 
-![Distributed Cache Banner](https://user-images.githubusercontent.com/placeholder/distributed-cache-banner.png)
-
 ---
 
 ## 📖 Project Overview
@@ -184,7 +182,7 @@ docker-compose ps
 
 ### 4. Access the Application
 
-- **Frontend Dashboard:** `http://localhost:80`
+- **Frontend Dashboard:** `http://localhost:3000`
 - **Coordinator API:** `http://localhost:5000`
 - **Cache Engine Master:** `localhost:5051`
 
