@@ -8,8 +8,9 @@ HttpServer::HttpServer(std::shared_ptr<CacheStore> store,   //cache address
                     std::shared_ptr<ReplicationManager> replication, //Replicationmanager address
                     std::shared_ptr<HeartBeat> hb, //heartbeat address
                     int port, //servers port
-                    const std::string& role)
-        :cache(store),repl_mgr(replication),heartbeat(hb),server_port(port),server_role(role),
+                    const std::string& role,
+                    const std::string& shardId)
+        :cache(store),repl_mgr(replication),heartbeat(hb),server_port(port),server_role(role),server_shard(shardId),
         start_time(std::chrono::steady_clock::now()),
         svr(std::make_unique<httplib::Server>()){}
 
@@ -26,6 +27,7 @@ void HttpServer::setupRoutes(){ //which url,which req and what action
         nlohmann::json health = {
             {"status", "healthy"},
             {"role", server_role},
+            {"shardId", server_shard},
             {"keys", cache->size()},
             {"uptime", uptime_seconds},
             {"offset", replication_offset.load()}
@@ -123,6 +125,18 @@ void HttpServer::setupRoutes(){ //which url,which req and what action
             res.status=400;
             res.set_content(nlohmann::json{{"error",e.what()}}.dump(),"application/json");
         }
+    });
+
+    svr->Delete("/replicate/([^/]+)",[this](const httplib::Request& req,httplib::Response& res){
+        if(server_role!="replica"){
+            res.status=403;
+            res.set_content(R"({"error":"Only replicas accept replication updates"})","application/json");
+            return;
+        }
+        std::string key=req.matches[1];
+        auto local_res=cache->del(key);
+        replication_offset++;
+        res.set_content(local_res.dump(),"application/json");
     });
 
     // Dynamic peer registration endpoint for Master node

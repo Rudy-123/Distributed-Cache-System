@@ -18,7 +18,8 @@ class HttpServer{
                    std::shared_ptr<ReplicationManager> replication, //Replicationmanager address
                    std::shared_ptr<HeartBeat> hb, //heartbeat address
                    int port, //servers port
-                   const std::string& role); //role of the node master or replica
+                   const std::string& role, //role of the node master or replica
+                   const std::string& shardId); //shard id
         ~HttpServer();
         void start();
         void stop();
@@ -30,6 +31,7 @@ class HttpServer{
         std::shared_ptr<HeartBeat> heartbeat;
         int server_port;
         std::string server_role;
+        std::string server_shard;
         std::chrono::steady_clock::time_point start_time;
         std::unique_ptr<httplib::Server> svr;
         std::atomic<uint64_t> replication_offset{0}; // Track number of writes processed

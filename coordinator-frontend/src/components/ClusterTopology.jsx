@@ -4,41 +4,52 @@ import { useSelector } from "react-redux";
 function ClusterTopology() {
   const { nodes } = useSelector((state) => state.cluster);
 
-  const topologyData = useMemo(() => {
-    const leader = nodes.find((n) => n.role === "master" || n.role === "leader");
-    const replicas = nodes.filter((n) => n.role !== "master" && n.role !== "leader");
-
-    const width = 700;
-    const height = 480;
-    const center = { x: width / 2, y: height / 2 };
-    const orbitRadius = 160;
-
-    const nodesWithCoords = [];
-
-    if (leader) {
-      nodesWithCoords.push({
-        ...leader,
-        x: center.x,
-        y: center.y,
-        isLeader: true,
-      });
-    }
-
-    replicas.forEach((rep, index) => {
-      const angle = (index * 2 * Math.PI) / (replicas.length || 1) - Math.PI / 2;
-      nodesWithCoords.push({
-        ...rep,
-        x: center.x + orbitRadius * Math.cos(angle),
-        y: center.y + orbitRadius * Math.sin(angle),
-        isLeader: false,
-      });
+  const shardsTopology = useMemo(() => {
+    // 1. Group by Shard
+    const grouped = {};
+    nodes.forEach(node => {
+      const sid = node.shardId || "shard-1";
+      if (!grouped[sid]) grouped[sid] = [];
+      grouped[sid].push(node);
     });
 
-    return { nodes: nodesWithCoords, center, width, height, orbitRadius };
+    // 2. Compute topology for each shard
+    return Object.entries(grouped).map(([shardId, shardNodes]) => {
+      const leader = shardNodes.find((n) => n.role === "master" || n.role === "leader");
+      const replicas = shardNodes.filter((n) => n.role !== "master" && n.role !== "leader");
+
+      const width = 350; // Smaller width so multiple shards fit side by side
+      const height = 350;
+      const center = { x: width / 2, y: height / 2 };
+      const orbitRadius = 100; // Smaller radius
+
+      const nodesWithCoords = [];
+
+      if (leader) {
+        nodesWithCoords.push({
+          ...leader,
+          x: center.x,
+          y: center.y,
+          isLeader: true,
+        });
+      }
+
+      replicas.forEach((rep, index) => {
+        const angle = (index * 2 * Math.PI) / (replicas.length || 1) - Math.PI / 2;
+        nodesWithCoords.push({
+          ...rep,
+          x: center.x + orbitRadius * Math.cos(angle),
+          y: center.y + orbitRadius * Math.sin(angle),
+          isLeader: false,
+        });
+      });
+
+      return { shardId, nodes: nodesWithCoords, center, width, height, orbitRadius };
+    });
   }, [nodes]);
 
-  const activeCount = topologyData.nodes.filter((n) => n.status === "healthy").length;
-  const totalCount = topologyData.nodes.length;
+  const activeCount = nodes.filter((n) => n.status === "healthy").length;
+  const totalCount = nodes.length;
 
   return (
     <div
@@ -101,9 +112,8 @@ function ClusterTopology() {
         </div>
       </div>
 
-      {/* SVG Topology Canvas */}
-      <div style={{ width: "100%", position: "relative", textAlign: "center" }}>
-        {topologyData.nodes.length === 0 ? (
+      <div style={{ width: "100%", display: "flex", flexWrap: "wrap", justifyContent: "center", gap: "24px" }}>
+        {shardsTopology.length === 0 ? (
           <div
             style={{
               height: "400px",
@@ -114,6 +124,7 @@ function ClusterTopology() {
               fontSize: "13px",
               flexDirection: "column",
               gap: "8px",
+              width: "100%"
             }}
           >
             <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" strokeWidth="1.5">
@@ -123,9 +134,14 @@ function ClusterTopology() {
             No active nodes discovered in cluster ring.
           </div>
         ) : (
+          shardsTopology.map((topologyData) => (
+            <div key={topologyData.shardId} style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
+              <div style={{ fontSize: "12px", color: "var(--text-secondary)", fontWeight: "600", marginBottom: "8px", textTransform: "uppercase", letterSpacing: "1px" }}>
+                {topologyData.shardId}
+              </div>
           <svg
-            width="100%"
-            height="440"
+            width={topologyData.width}
+            height={topologyData.height}
             viewBox={`0 0 ${topologyData.width} ${topologyData.height}`}
             preserveAspectRatio="xMidYMid meet"
             style={{ overflow: "visible" }}
@@ -174,7 +190,7 @@ function ClusterTopology() {
             <rect width={topologyData.width} height={topologyData.height} fill="url(#gridDot)" opacity="0.5" />
 
             {/* Concentric orbital guide rings */}
-            {[60, 120, topologyData.orbitRadius, topologyData.orbitRadius + 40].map((r, i) => (
+            {[40, 80, topologyData.orbitRadius, topologyData.orbitRadius + 30].map((r, i) => (
               <circle
                 key={`ring-${i}`}
                 cx={topologyData.center.x}
@@ -191,18 +207,18 @@ function ClusterTopology() {
             {/* Cross-hair center lines */}
             <line
               x1={topologyData.center.x}
-              y1={topologyData.center.y - topologyData.orbitRadius - 50}
+              y1={topologyData.center.y - topologyData.orbitRadius - 30}
               x2={topologyData.center.x}
-              y2={topologyData.center.y + topologyData.orbitRadius + 50}
+              y2={topologyData.center.y + topologyData.orbitRadius + 30}
               stroke="var(--border-subtle)"
               strokeWidth="0.5"
               strokeDasharray="4 8"
               opacity="0.2"
             />
             <line
-              x1={topologyData.center.x - topologyData.orbitRadius - 50}
+              x1={topologyData.center.x - topologyData.orbitRadius - 30}
               y1={topologyData.center.y}
-              x2={topologyData.center.x + topologyData.orbitRadius + 50}
+              x2={topologyData.center.x + topologyData.orbitRadius + 30}
               y2={topologyData.center.y}
               stroke="var(--border-subtle)"
               strokeWidth="0.5"
@@ -280,7 +296,7 @@ function ClusterTopology() {
               const statusColor = isHealthy
                 ? "var(--color-success)"
                 : "var(--color-critical)";
-              const nodeRadius = node.isLeader ? 30 : 22;
+              const nodeRadius = node.isLeader ? 26 : 18;
               const gradId = !isHealthy ? "url(#deadGrad)" : node.isLeader ? "url(#leaderGrad)" : "url(#replicaGrad)";
 
               return (
@@ -290,7 +306,7 @@ function ClusterTopology() {
                     <circle
                       cx={node.x}
                       cy={node.y}
-                      r="42"
+                      r="36"
                       fill="none"
                       stroke="var(--color-success)"
                       strokeWidth="1.5"
@@ -344,7 +360,7 @@ function ClusterTopology() {
                     >
                       <animate
                         attributeName="r"
-                        values={`${nodeRadius};${nodeRadius + 18}`}
+                        values={`${nodeRadius};${nodeRadius + 14}`}
                         dur="2.5s"
                         repeatCount="indefinite"
                       />
@@ -363,9 +379,9 @@ function ClusterTopology() {
                       {/* Crown/star icon for leader */}
                       <text
                         x={node.x}
-                        y={node.y - 4}
+                        y={node.y - 3}
                         fill="var(--color-success)"
-                        fontSize="14"
+                        fontSize="12"
                         textAnchor="middle"
                         dominantBaseline="middle"
                       >
@@ -375,7 +391,7 @@ function ClusterTopology() {
                         x={node.x}
                         y={node.y + 10}
                         fill="var(--color-success)"
-                        fontSize="7"
+                        fontSize="6"
                         fontWeight="800"
                         fontFamily="var(--font-mono)"
                         textAnchor="middle"
@@ -391,7 +407,7 @@ function ClusterTopology() {
                         x={node.x}
                         y={node.y - 2}
                         fill={isHealthy ? "var(--color-success)" : "var(--color-critical)"}
-                        fontSize="12"
+                        fontSize="10"
                         textAnchor="middle"
                         dominantBaseline="middle"
                       >
@@ -399,9 +415,9 @@ function ClusterTopology() {
                       </text>
                       <text
                         x={node.x}
-                        y={node.y + 10}
+                        y={node.y + 8}
                         fill={isHealthy ? "var(--color-success)" : "var(--text-muted)"}
-                        fontSize="6"
+                        fontSize="5"
                         fontWeight="700"
                         fontFamily="var(--font-mono)"
                         textAnchor="middle"
@@ -415,9 +431,9 @@ function ClusterTopology() {
                   {/* Node ID Label below the node */}
                   <text
                     x={node.x}
-                    y={node.y + nodeRadius + 16}
+                    y={node.y + nodeRadius + 14}
                     fill="var(--text-primary)"
-                    fontSize="11"
+                    fontSize="10"
                     fontWeight="700"
                     fontFamily="var(--font-sans)"
                     textAnchor="middle"
@@ -449,11 +465,13 @@ function ClusterTopology() {
               );
             })}
           </svg>
+            </div>
+          ))
         )}
       </div>
 
       {/* Legend Row */}
-      {topologyData.nodes.length > 0 && (
+      {shardsTopology.length > 0 && (
         <div
           style={{
             width: "100%",

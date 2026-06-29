@@ -6,6 +6,7 @@
 struct Config{
     int port=5051;
     std::string role="master"; // master or replica
+    std::string shardId="shard-1";
     size_t capacity=10000;
     std::vector<std::pair<std::string, int>> peers;
 };
@@ -19,6 +20,9 @@ inline Config parseArgs(int argc, char* argv[]){ //function reads all the inline
         }
         else if(arg.rfind("--role",0)==0){
             config.role=arg.substr(7);
+        }
+        else if(arg.rfind("--shardId",0)==0){
+            config.shardId=arg.substr(10);
         }
         else if(arg.rfind("--capacity",0)==0){
             config.capacity=std::stoull(arg.substr(11));

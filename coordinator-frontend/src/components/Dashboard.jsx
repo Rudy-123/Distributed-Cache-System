@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { logout } from "../store/authSlice";
-import LatencyChart from "./LatencyChart";
 import CacheExplorer from "./CacheExplorer";
 import NodeList from "./NodeList";
 import ClusterTopology from "./ClusterTopology";
@@ -60,7 +59,7 @@ function Dashboard() {
       const handleFailover = (event) => {
         console.log(`[FAILOVER] Leader node ${event.deadMasterId} died. Promoted replica ${event.newMasterId}.`);
       };
-      
+
       const handleNodeStatus = (updatedNodes) => {
         console.log(`Cluster size updated: ${updatedNodes.length} nodes registered.`);
       };
@@ -83,10 +82,10 @@ function Dashboard() {
   const activeNodesCount = nodes.filter((n) => n.status === "healthy").length;
   const totalNodesCount = nodes.length;
   const isHealthy = activeNodesCount > 0 && activeNodesCount === totalNodesCount;
-  
-  const leaderNode = nodes.find((n) => n.role === "master" || n.role === "leader");
-  const leaderName = leaderNode ? leaderNode.nodeId : "None";
-  
+
+  // Count unique shardIds across all nodes
+  const totalShards = new Set(nodes.map((n) => n.shardId).filter((id) => id != null)).size;
+
   const totalKeys = nodes.reduce((sum, n) => sum + (n.keysCount || 0), 0);
 
   const metricCards = [
@@ -101,18 +100,18 @@ function Dashboard() {
     {
       label: "Active Nodes",
       val: `${activeNodesCount}/${totalNodesCount}`,
-      color: "var(--color-info)",
-      accent: "linear-gradient(180deg, #58a6ff, #388bfd)",
+      color: "#22d3ee",
+      accent: "linear-gradient(180deg, #22d3ee, #0891b2)",
       icon: "⬡",
       sub: `${activeNodesCount} responding`,
     },
     {
-      label: "Leader Node",
-      val: leaderName,
-      color: "var(--color-purple)",
-      accent: "linear-gradient(180deg, #a855f7, #7c3aed)",
-      icon: "★",
-      sub: "Consensus elected",
+      label: "Total Shards",
+      val: totalShards.toLocaleString(),
+      color: "#2dd4bf",
+      accent: "linear-gradient(180deg, #2dd4bf, #0d9488)",
+      icon: "⧫",
+      sub: "Unique partitions",
     },
     {
       label: "Total Keys",
@@ -137,7 +136,7 @@ function Dashboard() {
           boxSizing: "border-box",
         }}
       >
-        {/* ── Header ── */}
+        {/* Header */}
         <header
           style={{
             display: "flex",
@@ -149,7 +148,6 @@ function Dashboard() {
           }}
         >
           <div>
-            {/* Breadcrumb */}
             <div style={{ fontSize: "11px", color: "var(--text-muted)", marginBottom: "8px", fontFamily: "var(--font-mono)", letterSpacing: "0.5px" }}>
               cluster / monitoring / <span style={{ color: "var(--text-secondary)" }}>dashboard</span>
             </div>
@@ -159,7 +157,7 @@ function Dashboard() {
                   fontSize: "28px",
                   fontWeight: "900",
                   margin: 0,
-                  background: "linear-gradient(135deg, #3fb950, #58a6ff, #a855f7)",
+                  background: "linear-gradient(135deg, #22d3ee, #14b8a6, #3b82f6)",
                   WebkitBackgroundClip: "text",
                   WebkitTextFillColor: "transparent",
                   letterSpacing: "-0.5px",
@@ -202,7 +200,7 @@ function Dashboard() {
               Real-time observability console for distributed consensus cache infrastructure
             </p>
           </div>
-          
+
           <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
             <span style={{ fontSize: "12px", color: "var(--text-muted)", fontFamily: "var(--font-mono)" }}>
               {email}
@@ -229,18 +227,18 @@ function Dashboard() {
           </div>
         </header>
 
-        {/* Gradient divider line */}
+        {/* Gradient divider line — warmer cyan/teal/blue tones */}
         <div
           style={{
             height: "1px",
-            background: "linear-gradient(90deg, transparent, rgba(63,185,80,0.3), rgba(88,166,255,0.3), rgba(168,85,247,0.2), transparent)",
+            background: "linear-gradient(90deg, transparent, rgba(34,211,238,0.35), rgba(20,184,166,0.3), rgba(59,130,246,0.25), transparent)",
             backgroundSize: "200% 100%",
             animation: "gradientLine 4s ease infinite",
             marginBottom: "24px",
           }}
         />
 
-        {/* ── 4-Card Metrics Row ── */}
+        {/* 4-Card Metrics Row */}
         <div
           style={{
             display: "grid",
@@ -292,42 +290,36 @@ function Dashboard() {
           ))}
         </div>
 
-        {/* ── Main Layout Grid ── */}
+        {/* Main Layout — Single Column Full Width */}
         <main
           style={{
-            display: "grid",
-            gridTemplateColumns: "1fr 1fr",
+            display: "flex",
+            flexDirection: "column",
             gap: "24px",
           }}
         >
-          {/* Left Column */}
-          <section style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
-            <div style={{ animation: "fadeIn 0.5s ease-out 0.3s backwards" }}>
-              <ClusterTopology />
-            </div>
+          {/* Cluster Topology */}
+          <div style={{ animation: "fadeIn 0.5s ease-out 0.3s backwards" }}>
+            <ClusterTopology />
+          </div>
 
-            <div className="obs-card" style={{ display: "flex", flexDirection: "column", gap: "16px", padding: "24px", animation: "fadeIn 0.5s ease-out 0.4s backwards" }}>
-              <div>
-                <h2 style={{ margin: 0, fontSize: "16px", fontWeight: "800", color: "var(--text-primary)", letterSpacing: "-0.3px" }}>
-                  Cluster Node Inspector
-                </h2>
-                <p style={{ margin: "4px 0 0 0", fontSize: "11px", color: "var(--text-secondary)" }}>
-                  Live telemetry, resource utilization, and sync status for all cache processes
-                </p>
-              </div>
-              <NodeList />
+          {/* Node List */}
+          <div className="obs-card" style={{ display: "flex", flexDirection: "column", gap: "16px", padding: "24px", animation: "fadeIn 0.5s ease-out 0.4s backwards" }}>
+            <div>
+              <h2 style={{ margin: 0, fontSize: "16px", fontWeight: "800", color: "var(--text-primary)", letterSpacing: "-0.3px" }}>
+                Cluster Node Inspector
+              </h2>
+              <p style={{ margin: "4px 0 0 0", fontSize: "11px", color: "var(--text-secondary)" }}>
+                Live telemetry, resource utilization, and sync status for all cache processes
+              </p>
             </div>
-          </section>
+            <NodeList />
+          </div>
 
-          {/* Right Column */}
-          <section style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
-            <div style={{ animation: "fadeIn 0.5s ease-out 0.3s backwards" }}>
-              <CacheExplorer />
-            </div>
-            <div style={{ animation: "fadeIn 0.5s ease-out 0.4s backwards" }}>
-              <LatencyChart />
-            </div>
-          </section>
+          {/* Cache Explorer */}
+          <div style={{ animation: "fadeIn 0.5s ease-out 0.5s backwards" }}>
+            <CacheExplorer />
+          </div>
         </main>
       </div>
     </>

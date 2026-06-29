@@ -68,7 +68,7 @@ bool ReplicationManager::replicateDel(const std::string &key){
         if(!peer.is_alive){continue;}
         httplib::Client cli(peer.host,peer.port);
         cli.set_connection_timeout(1,0);
-        cli.Delete(("/cache/" + key).c_str());
+        cli.Delete(("/replicate/" + key).c_str());
     }
     return true;
 }

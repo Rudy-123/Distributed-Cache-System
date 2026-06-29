@@ -10,7 +10,7 @@ const checkNodesHealth = async (io) => {
   //io is the socket instance
   try {
     const startPort = 5051;
-    const endPort = 5060;
+    const endPort = 5099;
 
     for (let port = startPort; port <= endPort; port++) {
       const start = performance.now();
@@ -77,9 +77,17 @@ const checkNodesHealth = async (io) => {
         //Node is registered, track changes to status/role to sync hashring
         const oldStatus = node.status;
         const oldRole = node.role;
+        const oldShardId = node.shardId;
 
         node.status = "healthy";
         node.role = res.data.role || node.role; // Dynamically sync active role from C++ node
+        // Force-sync shardId from C++ node if it reports one
+        if (res.data.shardId) {
+          if (node.shardId !== res.data.shardId) {
+            console.log(`[SHARD SYNC] Node ${node.nodeId} (port ${port}) changed shard: ${node.shardId} → ${res.data.shardId}`);
+          }
+          node.shardId = res.data.shardId;
+        }
         node.uptime = res.data.uptime;
         node.keysCount = res.data.keys || 0;
         node.replicationOffset = res.data.offset || 0;
@@ -106,7 +114,7 @@ const checkNodesHealth = async (io) => {
           hashRing.addNode(node);
         }
 
-        if (oldStatus !== "healthy" || oldRole !== node.role) {
+        if (oldStatus !== "healthy" || oldRole !== node.role || oldShardId !== node.shardId) {
           hashRing.removeNode(node.nodeId);
           hashRing.addNode(node); // addNode will appropriately place it as master/replica in the topology
           if (node.role === "replica") {

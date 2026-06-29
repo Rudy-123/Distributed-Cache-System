@@ -36,9 +36,9 @@ const start = async () => {
     if (count === 0) {
       console.log("Database has no cache node configurations. Seeding node-1, node-2, and node-3...");
       await NodeConfig.create([
-        { nodeId: "node-1", host: "127.0.0.1", port: 5051, role: "master", status: "dead" },
-        { nodeId: "node-2", host: "127.0.0.1", port: 5052, role: "replica", status: "dead" },
-        { nodeId: "node-3", host: "127.0.0.1", port: 5053, role: "replica", status: "dead" },
+        { nodeId: "node-1", host: "127.0.0.1", port: 5051, shardId: "shard-1", role: "master", status: "dead" },
+        { nodeId: "node-2", host: "127.0.0.1", port: 5052, shardId: "shard-1", role: "replica", status: "dead" },
+        { nodeId: "node-3", host: "127.0.0.1", port: 5053, shardId: "shard-1", role: "replica", status: "dead" },
       ]);
     }
 

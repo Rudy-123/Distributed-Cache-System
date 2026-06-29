@@ -43,7 +43,7 @@ int main(int argc,char *argv[]){ //no of args and actual values of args
         hb_ptr=std::make_shared<HeartBeat>(config.peers, repl_mgr);
         hb_ptr->start(); //start the background monitoring
     }
-    server_ptr=std::make_unique<HttpServer>(cache,repl_mgr,hb_ptr,config.port,config.role); //create the server with all the components 
+    server_ptr=std::make_unique<HttpServer>(cache,repl_mgr,hb_ptr,config.port,config.role, config.shardId); //create the server with all the components 
     server_ptr->start();
 
     return 0;
