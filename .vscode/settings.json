@@ -1,3 +1,4 @@
 {
-  "liveServer.settings.port": 5501
+  "liveServer.settings.port": 5501,
+  "cmake.sourceDirectory": "C:/Resume_Projects/Distributed_Cache/Distributed_Cache_System/cpp-cache-engine/build/_deps/json-src/tests/cmake_import_minver"
 }

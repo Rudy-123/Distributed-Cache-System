@@ -38,6 +38,11 @@ void HttpServer::setupRoutes(){ //which url,which req and what action
         res.set_content(cache->getStats().dump(),"application/json");
     });
 
+    //get all keys (Note: In a massive production environment, this should be paginated like Redis SCAN)
+    svr->Get("/keys",[this](const httplib::Request&, httplib::Response& res){
+        res.set_content(cache->getKeys().dump(),"application/json");
+    });
+
     //get the data from cache 
     svr->Get(R"(/cache/([^/]+))",[this](const httplib::Request&req, httplib::Response& res){ //regex for any type of combination
         std::string key=req.matches[1]; //fetch the key
@@ -52,6 +57,11 @@ void HttpServer::setupRoutes(){ //which url,which req and what action
 
     //imp route data is stored of the client and if server is master then its replicated into the slaves
     svr->Post("/cache",[this](const httplib::Request &req,httplib::Response& res){
+        if(server_role != "master"){
+            res.status = 421;
+            res.set_content(R"({"error":"Not master. Redirect."})", "application/json");
+            return;
+        }
         try{
             auto body=nlohmann::json::parse(req.body);
             std::string key=body.at("key"); //key extract
@@ -76,6 +86,11 @@ void HttpServer::setupRoutes(){ //which url,which req and what action
 
     //delete 
     svr->Delete("/cache/([^/]+)",[this](const httplib::Request& req,httplib::Response& res){
+        if(server_role != "master"){
+            res.status = 421;
+            res.set_content(R"({"error":"Not master. Redirect."})", "application/json");
+            return;
+        }
         std::string key=req.matches[1]; //extract the key from url 
         auto local_res=cache->del(key);
         replication_offset++;
