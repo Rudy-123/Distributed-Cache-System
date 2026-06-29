@@ -16,14 +16,13 @@ Equipped with a highly optimized **C++ Cache Engine**, a **Node.js Coordinator B
 
 ## ⚙️ Key Optimizations
 
-The system incorporates several architectural optimizations to ensure peak performance and strict consistency:
+- **C++ In-Memory Cache Engine:** Developed a C++20 in-memory cache engine with sub-millisecond latency, supporting O(1) GET/SET/DEL operations using an `unordered_map` paired with a Doubly Linked List. Implements an LRFU (Least Recently/Frequently Used) hybrid eviction policy that samples the 5 oldest entries from the LRU tail and evicts the one with the lowest `access_count`. TTL expiry is handled by a background sweeper thread using an ordered `std::set` (O(log N) insertion and cleanup), with all operations protected by `std::mutex` for thread safety.
 
-- **O(1) Read Operations:** Eliminated runtime routing overhead by precomputing replica node mappings, ensuring read operations maintain O(1) time complexity.
-- **O(log N) Shard Addition:** Optimized internal data structures to reduce the time complexity of adding a new shard dynamically from O(N) to O(log N).
-- **Sub-50ms Replication Lag:** Master nodes stream state changes to replicas asynchronously, achieving near-instantaneous consistency with less than 50ms of replication lag.
-- **Zero-Downtime Resilience:** The Node.js Coordinator implements intelligent client-side retry blocks. If a Master node fails mid-traffic, the coordinator waits for the C++ cluster to elect a new Master and seamlessly retries, guaranteeing zero failed requests from the client's perspective.
-- **Consistent TTL Management:** To prevent clock-drift issues, replica nodes do not expire keys independently. The Master centrally governs TTLs and issues `DEL` commands, ensuring strict data consistency across the shard.
-- **Custom LFU Eviction:** Implemented a custom C++ memory management system utilizing a Hash Map combined with frequency tracking to execute strict Least Frequently Used (LFU) evictions under high memory pressure.
+- **Asynchronous Replication & Automated Failover:** Implemented async data replication across a multi-node cluster using detached `std::thread` per write, with quorum-based acknowledgment (>50% of nodes). Heartbeat failure detection pings peers every 5 seconds, and on master failure the Node.js coordinator performs offset-based leader election (sorting candidates by `replicationOffset` then `uptime`), promotes the best replica via the C++ `/promote` endpoint, re-registers surviving replicas as peers, and updates the Hash Ring — all automatically.
+
+- **Double Hash Ring with Zero-Downtime Key Migration:** Built a Node.js API Gateway with a Double Hash Ring topology backed by MongoDB. On shard addition, the current ring state is cloned into an `oldRing`, and a background `MigrationWorker` sweeps all keys from old masters, re-hashing and relocating misplaced keys to their new shard owners. During migration, read misses on the new ring transparently fall back to the old ring via lazy-read migration (fetching from the old shard, returning to the client, and asynchronously writing to the new shard and deleting from the old). Writes during migration also fire-and-forget delete stale copies on the old shard.
+
+- **Stable Consistent Hashing with Precomputed Read Pools:** Optimized routing stability by replacing volatile virtual nodes with fixed, evenly-spaced Shard IDs (`shardIndex / totalShards * 1,000,000`), achieving O(log N) write routing via binary search over sorted hash keys and O(1) read routing via a precomputed `readPool` per shard. The read pool is dynamically rebuilt on every health check cycle, filtering replicas with replication lag under 50ms and randomly load-balancing across them.
 
 ---
 
