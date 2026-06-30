@@ -8,7 +8,7 @@ const hashRing = require("../services/hashRing"); //hashring service
 const AccessLog = require("../models/AccessLog");
 const { protect } = require("../middleware/auth"); //jwt auth middleware
 
-router.post("/", /*protect,*/ async (req, res) => {
+router.post("/", protect, async (req, res) => {
   //client want to save the data on the cache
   const { key, value, ttl } = req.body;
   if (!key || !value) {
