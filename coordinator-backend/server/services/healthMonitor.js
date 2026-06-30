@@ -5,6 +5,7 @@ const hashRing = require("./hashRing");
 const socketManager = require("./socketManager");
 const failoverManager = require("./failoverManager");
 const { performance } = require("perf_hooks");
+const missedHeartbeats = {};
 
 const checkNodesHealth = async (io) => {
   //io is the socket instance
@@ -12,14 +13,16 @@ const checkNodesHealth = async (io) => {
     const startPort = 5051;
     const endPort = 5099;
 
-    for (let port = startPort; port <= endPort; port++) {
+    const checkPort = async (port) => {
       const start = performance.now();
       try {
         const url = `http://127.0.0.1:${port}/health`;
-        const res = await axios.get(url, {
-          timeout: 1000, // wait for 1s
+        const healthAxios = axios.create({ httpAgent: false }); // bypass global queue
+        const res = await healthAxios.get(url, {
+          timeout: 3000, // wait for 3s (increased so heavily loaded nodes aren't marked dead)
         });
         const latency = parseFloat((performance.now() - start).toFixed(6));
+        missedHeartbeats[port] = 0; // Reset missed heartbeats on success
 
         //Auto-discover: Check if this running port is registered in the DB
         let node = await NodeConfig.findOne({ port: port });
@@ -139,19 +142,32 @@ const checkNodesHealth = async (io) => {
           }
         }
       } catch (err) {
-        // Port is not responding. Check if we already have it in the DB.
-        const node = await NodeConfig.findOne({ port: port });
-        if (node && node.status === "healthy") {
-          // Node went dead
-          hashRing.removeNode(node.nodeId);
-          node.status = "dead";
-          await node.save();
-          if (node.role === "master") {
-            await failoverManager.handleMasterFailure(node, io);
+        // Port is not responding.
+        missedHeartbeats[port] = (missedHeartbeats[port] || 0) + 1;
+        
+        if (missedHeartbeats[port] >= 3) {
+          const node = await NodeConfig.findOne({ port: port });
+          if (node && node.status === "healthy") {
+            console.log(`[HEALTH MONITOR] Node on port ${port} missed 3 heartbeats. Marking as DEAD.`);
+            // Node went dead
+            hashRing.removeNode(node.nodeId);
+            node.status = "dead";
+            await node.save();
+            if (node.role === "master") {
+              await failoverManager.handleMasterFailure(node, io);
+            }
           }
+        } else {
+           console.log(`[HEALTH MONITOR] Node on port ${port} missed heartbeat (${missedHeartbeats[port]}/3).`);
         }
       }
+    };
+
+    const promises = [];
+    for (let port = startPort; port <= endPort; port++) {
+      promises.push(checkPort(port));
     }
+    await Promise.all(promises);
 
     const updatedNodes = await NodeConfig.find({}); //fetch the details of nodes alive or dead
     socketManager.emitNodeStatus(updatedNodes);
@@ -194,7 +210,13 @@ const startHealthMonitor = (io) => {
     console.log("[WARNING] MongoDB Change Streams not supported (requires Replica Set). Relying on interval polling.");
   }
 
-  setInterval(() => checkNodesHealth(io), 5000);
+  const scheduleNextHealthCheck = () => {
+    setTimeout(async () => {
+      await checkNodesHealth(io);
+      scheduleNextHealthCheck();
+    }, 5000);
+  };
+  scheduleNextHealthCheck();
 
   // Aggregator loop: Queries AccessLog database every 2 seconds to calculate real-time QPS and latency
   const AccessLog = require("../models/AccessLog");

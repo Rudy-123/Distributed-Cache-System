@@ -14,7 +14,7 @@ build.ninja
 node_modules/
 dist/
 out/
-
+benchmarks/
 # Environment Variables / Credentials
 .env
 .env.*
@@ -25,3 +25,4 @@ out/
 Thumbs.db
 optimizations.md
 testing_phases.md
+commands.txt

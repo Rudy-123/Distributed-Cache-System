@@ -16,6 +16,7 @@ std::atomic<uint64_t> failed_ops{0};
 void runWorker(const std::string& host, int port, int duration_seconds) {
     httplib::Client cli(host, port);
     cli.set_connection_timeout(1, 0);
+    cli.set_keep_alive(true); // REQUIRED FOR MASSIVE THROUGHPUT ON WINDOWS
 
     auto end_time = std::chrono::steady_clock::now() + std::chrono::seconds(duration_seconds);
     int local_counter = 0;
@@ -26,7 +27,7 @@ void runWorker(const std::string& host, int port, int duration_seconds) {
 
         // 1. SET
         std::string payload = R"({"key":")" + key + R"(","value":"bench_val_data_payload_string_val"})";
-        auto res = cli.Post("/cache", payload, "application/json");
+        auto res = cli.Post("/api/cache", payload, "application/json");
         if (res && res->status == 200) {
             total_ops.fetch_add(1);
         } else {
@@ -34,12 +35,14 @@ void runWorker(const std::string& host, int port, int duration_seconds) {
         }
 
         // 2. GET
-        auto g_res = cli.Get(("/cache/" + key).c_str());
+        auto g_res = cli.Get(("/api/cache/" + key).c_str());
         if (g_res && g_res->status == 200) {
             total_ops.fetch_add(1);
         } else {
             failed_ops.fetch_add(1);
         }
+
+        // Throttle removed for raw standalone benchmarking
     }
 }
 

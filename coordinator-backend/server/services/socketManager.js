@@ -25,7 +25,7 @@ module.exports.emitMetrics = (metrics) => {
 };
 
 module.exports.emitFailover = (event) => {
-  if (activeIo) {
-    activeIo.emit("failover-triggered", event);
+  if (activeIO) {
+    activeIO.emit("failover-triggered", event);
   }
 };

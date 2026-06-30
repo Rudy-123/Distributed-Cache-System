@@ -15,8 +15,8 @@ function ClusterTopology() {
 
     // 2. Compute topology for each shard
     return Object.entries(grouped).map(([shardId, shardNodes]) => {
-      const leader = shardNodes.find((n) => n.role === "master" || n.role === "leader");
-      const replicas = shardNodes.filter((n) => n.role !== "master" && n.role !== "leader");
+      const leader = shardNodes.find((n) => (n.role === "master" || n.role === "leader") && n.status === "healthy") || shardNodes.find((n) => n.role === "master" || n.role === "leader");
+      const replicas = shardNodes.filter((n) => !leader || n.nodeId !== leader.nodeId);
 
       const width = 350; // Smaller width so multiple shards fit side by side
       const height = 350;

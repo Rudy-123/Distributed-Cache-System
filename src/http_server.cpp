@@ -73,9 +73,7 @@ void HttpServer::setupRoutes(){ //which url,which req and what action
             replication_offset++;
             if(server_role=="master"){
                 // Launch replication in a background thread asynchronously (Asynchronous Replication)
-                std::thread([this, key, value, ttl]() {
-                    // 1500ms delay to simulate network latency and let the user see the replication lag
-                    std::this_thread::sleep_for(std::chrono::milliseconds(1500));
+                std::thread([this, key, value, ttl]() { 
                     repl_mgr->replicateSet(key, value, ttl);
                 }).detach();
             }
@@ -99,7 +97,6 @@ void HttpServer::setupRoutes(){ //which url,which req and what action
         if(server_role=="master"){
             // Launch deletion in a background thread asynchronously (Asynchronous Replication)
             std::thread([this, key]() {
-                std::this_thread::sleep_for(std::chrono::milliseconds(1500));
                 repl_mgr->replicateDel(key);
             }).detach();
         }

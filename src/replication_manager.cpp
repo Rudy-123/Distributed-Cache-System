@@ -6,6 +6,9 @@
 
 void ReplicationManager::addPeer(const std::string& host,int port){
     std::lock_guard<std::mutex>lock(mtx);
+    for(const auto& p : peers){
+        if(p.host == host && p.port == port) return; // Prevent massive duplication leak
+    }
     peers.push_back({host,port,true});
 }
 
