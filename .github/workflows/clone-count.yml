@@ -1,0 +1,18 @@
+name: GitHub Clone Count Badge
+on:
+  schedule:
+    - cron: "0 */8 * * *" # Runs every 8 hours
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Create Badge
+        uses: MoePlayer/clone-count-badge@v1.2.0
+        with:
+          username: ${{ github.repository_owner }}
+          repository: ${{ github.event.repository.name }}
+          token: ${{ secrets.GH_TOKEN }}
+          gist-id: ${{ secrets.GIST_ID }}
