@@ -1,5 +1,7 @@
 # High-Performance Distributed Cache System
 
+![Clone Count](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/Rudy-123/4e4b4ee1ec7b0c889ea91aa7bd53f2af/raw/clone.json)
+
 ### Scalable, Fault-Tolerant In-Memory Data Grid with Sharding
 
 ---
