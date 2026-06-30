@@ -1,18 +1,72 @@
 name: GitHub Clone Count Badge
 on:
   schedule:
-    - cron: "0 */8 * * *" # Runs every 8 hours
+    - cron: "0 */8 * * *"
   workflow_dispatch:
 
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
-      - name: Create Badge
-        uses: MShawon/github-clone-count-badge@master
-        with:
-          username: ${{ github.repository_owner }}
-          repository: ${{ github.event.repository.name }}
-          token: ${{ secrets.GH_TOKEN }}
-          gist-id: ${{ secrets.GIST_ID }}
+      - name: Fetch and Update Clone Count
+        env:
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+          GIST_ID: ${{ secrets.GIST_ID }}
+          REPO: ${{ github.repository }}
+        run: |
+          python -c '
+          import os, requests, json
+          
+          token = os.environ["GH_TOKEN"]
+          repo = os.environ["REPO"]
+          gist_id = os.environ["GIST_ID"]
+          headers = {"Authorization": f"token {token}", "Accept": "application/vnd.github.v3+json"}
+          
+          # Fetch clones from your repo
+          r_clones = requests.get(f"https://api.github.com/repos/{repo}/traffic/clones", headers=headers)
+          daily_clones = r_clones.json().get("clones", [])
+          
+          # Fetch your Gist
+          r_gist = requests.get(f"https://api.github.com/gists/{gist_id}", headers=headers)
+          files = r_gist.json().get("files", {})
+          
+          saved_count = 0
+          last_timestamp = ""
+          
+          if "clone.json" in files:
+              try:
+                  content = json.loads(files["clone.json"]["content"])
+                  saved_count = int(content.get("message", 0))
+                  last_timestamp = content.get("last_timestamp", "")
+              except: pass
+          
+          # Add only new clones
+          new_count = 0
+          latest_ts = last_timestamp
+          
+          for day in daily_clones:
+              ts = day["timestamp"]
+              if not last_timestamp or ts > last_timestamp:
+                  new_count += day["uniques"] # Only count unique cloners!
+                  if ts > latest_ts:
+                      latest_ts = ts
+          
+          final_count = saved_count + new_count
+          if not latest_ts and daily_clones:
+              latest_ts = daily_clones[-1]["timestamp"]
+              
+          if final_count == 0 and daily_clones:
+              final_count = sum(day["uniques"] for day in daily_clones)
+          
+          # Save back to Gist in shields.io format
+          badge_data = {
+              "schemaVersion": 1,
+              "label": "clones",
+              "message": str(final_count),
+              "color": "success",
+              "last_timestamp": latest_ts
+          }
+          
+          requests.patch(f"https://api.github.com/gists/{gist_id}", headers=headers, json={"files": {"clone.json": {"content": json.dumps(badge_data)}}})
+          print(f"Successfully updated total clones to: {final_count}")
+          '
