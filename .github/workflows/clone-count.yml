@@ -10,7 +10,7 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - name: Create Badge
-        uses: MoePlayer/clone-count-badge@v1.2.0
+        uses: MShawon/github-clone-count-badge@v1
         with:
           username: ${{ github.repository_owner }}
           repository: ${{ github.event.repository.name }}
