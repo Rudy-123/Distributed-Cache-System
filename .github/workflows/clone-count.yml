@@ -10,7 +10,7 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - name: Create Badge
-        uses: MShawon/github-clone-count-badge@main
+        uses: MShawon/github-clone-count-badge@master
         with:
           username: ${{ github.repository_owner }}
           repository: ${{ github.event.repository.name }}
