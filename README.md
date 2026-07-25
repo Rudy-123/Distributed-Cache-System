@@ -138,27 +138,6 @@ Where
 
 ---
 
-# 📚 Table of Contents
-
-- 📖 Overview
-- ✨ Features
-- ⚙️ Complexity Analysis
-- 🏗️ System Architecture
-- 🔄 Request Workflow
-- 🔁 Online Shard Expansion
-- ❤️ Health Monitoring & Failover
-- 🧠 Cache Engine Design
-- 💻 Tech Stack
-- 📁 Repository Structure
-- 🚀 Getting Started
-- 🧪 Testing & Benchmarking
-- 🔌 API Overview
-- ⚠️ Limitations
-- 🛣️ Future Improvements
-- 🤝 Contributing
-- 📄 License
-
----
 
 # 🏗️ System Architecture
 ```mermaid
