@@ -1,633 +1,941 @@
-High-Performance Distributed Cache System
+<h1 align="center">
+🚀 Distributed Cache System
+</h1>
 
-Concurrent C++ Cache Engine with Replication, Sharding, Failover, Online Migration, and Real-Time Monitoring
+<p align="center">
+A high-performance distributed in-memory key-value cache built with <b>C++20</b>, <b>Node.js</b>, <b>React</b>, <b>MongoDB</b>, and <b>Docker</b>.
+</p>
 
-📖 Project Overview
+<p align="center">
+
+![C++](https://img.shields.io/badge/C++-20-blue?logo=cplusplus)
+![Node.js](https://img.shields.io/badge/Node.js-Express-339933?logo=node.js&logoColor=white)
+![React](https://img.shields.io/badge/React-18-61DAFB?logo=react)
+![MongoDB](https://img.shields.io/badge/MongoDB-Database-47A248?logo=mongodb&logoColor=white)
+![Docker](https://img.shields.io/badge/Docker-Containerized-2496ED?logo=docker&logoColor=white)
+![License](https://img.shields.io/badge/License-MIT-yellow)
+
+</p>
+
+---
+
+# 📖 Overview
 
 Distributed Cache System is an engineering prototype that explores the design and implementation of a distributed in-memory key-value cache.
 
 The project combines:
 
-a concurrent C++20 cache engine,
-
-a Node.js/Express coordinator for routing and cluster management,
-
-MongoDB-backed cluster metadata,
-
-a React monitoring dashboard,
-
-and Docker Compose for multi-service execution.
-
-The system is organised into shards. Each shard contains one primary node and one or more replicas. The coordinator hashes incoming keys, routes writes to the shard primary, distributes reads across an eligible read pool, monitors node health, and initiates replica promotion when a primary becomes unavailable.
-
-The implementation also supports online shard expansion through old/new routing topologies, background key migration, TTL preservation, and lazy-read fallback.
-
-Project status: This repository is a detailed distributed-systems prototype created for learning, experimentation, and validation of caching, replication, routing, migration, and failure-management mechanisms. It is not intended to be a production-ready replacement for Redis.
-
-✨ Core Features
-
-C++20 Cache Engine
-
-Average O(1) key indexing for GET, SET, and DELETE using std::unordered_map
-
-Doubly linked list for access-order tracking
-
-LRFU-inspired eviction that combines recency and access-frequency information
-
-Ordered TTL scheduling with O(log N) expiration insertion/removal
-
-Lazy expiration during reads and active cleanup through a background worker
-
-Mutex-protected access to shared cache state
-
-Cache statistics for hits, misses, writes, deletions, and evictions
-
-HTTP/JSON endpoints for cache and cluster operations
-
-Replication and Failure Handling
-
-Primary-replica shard topology
-
-Quorum-acknowledged SET replication
-
-Thread-safe peer registration and health-state management
-
-Periodic node health checks
-
-Node failure confirmation after repeated missed heartbeats
-
-Automatic replica promotion
-
-Promotion candidates prioritised by replication offset and uptime
-
-Coordinator retry handling after topology or primary-role changes
-
-Sharding and Online Expansion
-
-Deterministic key hashing
-
-O(log S) shard lookup through binary search over sorted shard positions
-
-Writes routed to the shard primary
-
-O(1) node selection from a prefiltered read pool
-
-Read pools include the primary and eligible replicas within the configured health-latency threshold
-
-Old and new routing topologies maintained during shard expansion
-
-Background migration of only the keys whose destination changes
-
-Remaining TTL preserved while moving keys
-
-Lazy-read fallback for keys not yet migrated
-
-Stale-copy cleanup after successful migration
-
-Coordinator and Monitoring
-
-Node.js and Express API coordinator
-
-MongoDB-backed node configuration, cluster metadata, and operation logs
-
-HTTP keep-alive and connection pooling for cache-node requests
-
-Socket.IO events for:
-
-node-health updates,
-
-throughput and latency metrics,
-
-topology changes,
-
-and failover notifications
-
-React dashboard for cluster visibility and management
-
-Testing and Deployment
-
-Unit tests for core cache operations, eviction, TTL expiration, and concurrent access
-
-Configurable multithreaded throughput benchmark
-
-Successful/failed operation counters and operations-per-second reporting
-
-Docker and Docker Compose configuration for running the complete system
-
-⚙️ Complexity Summary
-
-Let:
-
-N = number of entries inside a cache node
-
-S = number of shards
-
-K = number of keys evaluated during migration
-
-Operation
-
-Complexity
-
-Implementation
-
-Cache key lookup
-
-Average O(1)
-
-std::unordered_map
-
-Cache insertion/update
-
-Average O(1), excluding TTL scheduling
-
-Hash-map indexing
-
-Cache deletion
-
-Average O(1), excluding TTL removal
-
-Hash-map + list iterator
-
-TTL scheduling
-
-O(log N)
-
-Ordered expiration structure
-
-Shard lookup
-
-O(log S)
-
-Binary search over sorted shard positions
-
-Read-node selection
-
-O(1)
-
-Random selection from a prebuilt eligible pool
-
-Ring rebuild
-
-O(S log S)
-
-Rebuilding and sorting shard positions
-
-Key migration
-
-Approximately O(K log S)
-
-Rehashing keys against the updated ring
-
-Shard addition is therefore not treated as a single O(log N) operation. It includes rebuilding routing metadata and migrating the affected keys.
-
-🏗️ System Architecture
-
+- ⚡ A concurrent **C++20 cache engine**
+- 🌐 A **Node.js / Express coordinator**
+- 🗄️ **MongoDB** backed cluster metadata
+- 📊 A **React monitoring dashboard**
+- 🐳 Docker Compose deployment
+
+The system is organized into **shards**, where every shard contains a **Primary** and one or more **Replica** nodes.
+
+The coordinator is responsible for:
+
+- Routing client requests
+- Determining shard ownership
+- Replicating writes
+- Health monitoring
+- Automatic failover
+- Online shard migration
+- Cluster metadata management
+
+---
+
+> **Project Status**
+>
+> This repository is an educational distributed-systems implementation created to study caching, replication, failover, routing, migration, concurrency, and monitoring.
+>
+> It is **not intended as a production replacement for Redis.**
+
+---
+
+# ✨ Features
+
+## ⚡ High Performance Cache Engine
+
+- Average **O(1)** GET / SET / DELETE using `std::unordered_map`
+- Thread-safe concurrent cache
+- Doubly linked list for access-order tracking
+- LRFU-inspired eviction policy
+- Ordered TTL scheduling
+- Background expiration worker
+- Lazy expiration on reads
+- Cache statistics
+- HTTP/JSON API
+
+---
+
+## 🔄 Replication & Failover
+
+- Primary–Replica architecture
+- Quorum-based replication
+- Automatic replica promotion
+- Health monitoring
+- Retry after topology changes
+- Replication-offset aware promotion
+- Thread-safe peer management
+
+---
+
+## 🌍 Sharding & Routing
+
+- Deterministic hashing
+- Binary-search shard lookup
+- O(1) read-node selection
+- Configurable read pools
+- Health-aware routing
+- Background key migration
+- Lazy read migration
+- TTL preservation
+
+---
+
+## 📊 Monitoring
+
+- Node.js Coordinator
+- MongoDB cluster metadata
+- Socket.IO live updates
+- React Dashboard
+- Throughput metrics
+- Latency metrics
+- Failover notifications
+- Cluster topology visualization
+
+---
+
+## 🧪 Testing
+
+- Unit Tests
+- Concurrent Benchmarks
+- Throughput Reporting
+- Docker Deployment
+- GitHub Actions
+
+---
+
+# ⚙️ Complexity Analysis
+
+| Operation | Complexity | Implementation |
+|-----------|------------|----------------|
+| GET | Average **O(1)** | `unordered_map` |
+| SET | Average **O(1)** | Hash Table |
+| DELETE | Average **O(1)** | Hash Table |
+| TTL Scheduling | **O(log N)** | Ordered expiration structure |
+| Shard Lookup | **O(log S)** | Binary Search |
+| Read Node Selection | **O(1)** | Eligible Pool |
+| Ring Rebuild | **O(S log S)** | Sorted shard positions |
+| Migration | **O(K log S)** | Rehashing |
+
+Where
+
+- **N** = Keys inside a cache node
+- **S** = Number of shards
+- **K** = Keys evaluated during migration
+
+---
+
+# 📚 Table of Contents
+
+- 📖 Overview
+- ✨ Features
+- ⚙️ Complexity Analysis
+- 🏗️ System Architecture
+- 🔄 Request Workflow
+- 🔁 Online Shard Expansion
+- ❤️ Health Monitoring & Failover
+- 🧠 Cache Engine Design
+- 💻 Tech Stack
+- 📁 Repository Structure
+- 🚀 Getting Started
+- 🧪 Testing & Benchmarking
+- 🔌 API Overview
+- ⚠️ Limitations
+- 🛣️ Future Improvements
+- 🤝 Contributing
+- 📄 License
+
+---
+
+# 🏗️ System Architecture
+```mermaid
 flowchart TD
-    classDef client fill:#f3e5f5,stroke:#4a148c,stroke-width:2px,color:#000;
-    classDef frontend fill:#e3f2fd,stroke:#0d47a1,stroke-width:2px,color:#000;
-    classDef coordinator fill:#fff8e1,stroke:#e65100,stroke-width:2px,color:#000;
-    classDef metadata fill:#f5f5f5,stroke:#424242,stroke-width:2px,color:#000;
-    classDef primary fill:#ffebee,stroke:#b71c1c,stroke-width:2px,color:#000;
-    classDef replica fill:#e8f5e9,stroke:#1b5e20,stroke-width:2px,color:#000;
 
-    Client((Client / User)):::client
-    Dashboard[React Dashboard<br/>Cluster Monitoring]:::frontend
-    Coordinator[Node.js / Express Coordinator<br/>Routing · Health · Failover · Migration]:::coordinator
-    MongoDB[(MongoDB<br/>Cluster Metadata & Logs)]:::metadata
+classDef client fill:#E3F2FD,stroke:#1565C0,color:#000
+classDef dashboard fill:#E8F5E9,stroke:#2E7D32,color:#000
+classDef coordinator fill:#FFF3E0,stroke:#EF6C00,color:#000
+classDef db fill:#ECEFF1,stroke:#455A64,color:#000
+classDef primary fill:#FFEBEE,stroke:#C62828,color:#000
+classDef replica fill:#E8F5E9,stroke:#2E7D32,color:#000
 
-    subgraph CacheGrid["C++20 Distributed Cache Grid"]
-        direction LR
+Client((Client)):::client
 
-        subgraph Shard1["Shard 1"]
-            P1[Primary 1]:::primary
-            R11[Replica 1A]:::replica
-            R12[Replica 1B]:::replica
-        end
+Dashboard[React Dashboard]:::dashboard
 
-        subgraph Shard2["Shard 2"]
-            P2[Primary 2]:::primary
-            R21[Replica 2A]:::replica
-            R22[Replica 2B]:::replica
-        end
-    end
+Coordinator[Node.js Coordinator]:::coordinator
 
-    Client --> Coordinator
-    Dashboard <--> Coordinator
-    Coordinator <--> MongoDB
+Mongo[(MongoDB)]:::db
 
-    Coordinator -->|Writes| P1
-    Coordinator -->|Writes| P2
+subgraph Cluster["Distributed Cache Cluster"]
 
-    Coordinator -.->|Reads from eligible pool| P1
-    Coordinator -.->|Reads from eligible pool| R11
-    Coordinator -.->|Reads from eligible pool| R12
-    Coordinator -.->|Reads from eligible pool| P2
-    Coordinator -.->|Reads from eligible pool| R21
-    Coordinator -.->|Reads from eligible pool| R22
+direction LR
 
-    P1 -->|Quorum-acknowledged replication| R11
-    P1 -->|Quorum-acknowledged replication| R12
-    P2 -->|Quorum-acknowledged replication| R21
-    P2 -->|Quorum-acknowledged replication| R22
+subgraph S1["Shard 1"]
+P1[Primary]:::primary
+R11[Replica A]:::replica
+R12[Replica B]:::replica
+end
 
-    Coordinator -.->|Health checks| P1
-    Coordinator -.->|Health checks| R11
-    Coordinator -.->|Health checks| R12
-    Coordinator -.->|Health checks| P2
-    Coordinator -.->|Health checks| R21
-    Coordinator -.->|Health checks| R22
+subgraph S2["Shard 2"]
+P2[Primary]:::primary
+R21[Replica A]:::replica
+R22[Replica B]:::replica
+end
 
-🔄 Request Workflow
+end
 
-Write Path
+Client --> Coordinator
 
-A client sends a SET request to the coordinator.
+Dashboard <--> Coordinator
 
-The coordinator hashes the key.
+Coordinator <--> Mongo
 
-Binary search identifies the responsible shard.
+Coordinator -->|Writes| P1
+Coordinator -->|Writes| P2
 
-The request is forwarded to the shard primary.
+Coordinator -. Reads .-> P1
+Coordinator -. Reads .-> R11
+Coordinator -. Reads .-> R12
 
-The primary updates its local cache.
+Coordinator -. Reads .-> P2
+Coordinator -. Reads .-> R21
+Coordinator -. Reads .-> R22
 
-The primary forwards the write to active replicas.
+P1 -->|Replication| R11
+P1 -->|Replication| R12
 
-The operation succeeds after the required quorum acknowledges the write.
+P2 -->|Replication| R21
+P2 -->|Replication| R22
 
-The coordinator records the operation and returns the response.
+Coordinator -. Health Checks .-> P1
+Coordinator -. Health Checks .-> R11
+Coordinator -. Health Checks .-> R12
+Coordinator -. Health Checks .-> P2
+Coordinator -. Health Checks .-> R21
+Coordinator -. Health Checks .-> R22
+```
 
-Read Path
+---
 
-A client sends a GET request to the coordinator.
+# 🔄 Request Workflow
 
-The coordinator identifies the responsible shard.
+Every client request first reaches the **Coordinator**, which determines the responsible shard before forwarding the request to the appropriate cache node.
 
-A node is selected in O(1) from the shard's prebuilt eligible read pool.
+---
 
-The selected node returns the value or a cache miss.
+## ✍️ Write Path
 
-During migration, the coordinator can fall back to the previous topology and lazily move the key to its new destination.
-
-The remaining TTL is preserved during the move.
-
-Delete Path
-
-The coordinator routes the delete request using the current topology.
-
-During migration, deletion is applied to both relevant old and new destinations.
-
-This prevents stale copies from surviving a topology change.
-
-🔁 Online Shard Expansion
-
-The coordinator supports shard expansion without immediately blocking all client traffic.
-
+```mermaid
 sequenceDiagram
-    participant Admin
-    participant Coordinator
-    participant OldRing as Previous Ring
-    participant NewRing as Updated Ring
-    participant OldPrimary
-    participant NewPrimary
 
-    Admin->>Coordinator: Register new shard
-    Coordinator->>Coordinator: Snapshot old ring and topology
-    Coordinator->>NewRing: Rebuild sorted shard positions
-    Coordinator->>OldPrimary: Enumerate existing keys
+participant Client
+participant Coordinator
+participant Primary
+participant Replicas
 
-    loop For each key whose shard changes
-        Coordinator->>OldPrimary: GET value and remaining TTL
-        OldPrimary-->>Coordinator: Value + TTL
-        Coordinator->>NewPrimary: SET value with remaining TTL
-        NewPrimary-->>Coordinator: Write result
-        Coordinator->>OldPrimary: DELETE old copy
-    end
+Client->>Coordinator: SET(key,value)
 
-    Coordinator->>Coordinator: Complete migration
-    Coordinator->>Coordinator: Apply queued topology changes
+Coordinator->>Coordinator: Hash Key
 
-During migration:
+Coordinator->>Primary: Forward Write
 
-normal requests continue using the current routing state,
+Primary->>Primary: Update Local Cache
 
-the previous topology remains available for fallback,
+Primary->>Replicas: Replicate Write
 
-reads can lazily migrate missing keys,
+Replicas-->>Primary: ACK
 
-writes remove stale copies from the previous shard,
+Primary-->>Coordinator: Quorum Success
 
-deletes target both possible destinations,
+Coordinator-->>Client: Success Response
+```
 
-and additional topology changes are queued until the active migration completes.
+### Flow
 
-❤️ Health Monitoring and Failover
+1. Client sends a **SET** request.
+2. Coordinator hashes the key.
+3. Binary search identifies the target shard.
+4. Write is forwarded to the Primary.
+5. Primary updates its local cache.
+6. Replicas receive the write.
+7. Operation succeeds after the required quorum acknowledges.
+8. Coordinator logs the operation and responds.
 
+---
+
+## 📖 Read Path
+
+```mermaid
 sequenceDiagram
-    participant Monitor as Health Monitor
-    participant Primary
-    participant DB as MongoDB
-    participant Failover
-    participant Replica
-    participant Dashboard
 
-    loop Every health-check interval
-        Monitor->>Primary: Health request
-    end
+participant Client
+participant Coordinator
+participant ReadNode
 
-    Primary--xMonitor: Repeated failures
-    Monitor->>DB: Mark node unavailable
-    Monitor->>Failover: Trigger shard failover
-    Failover->>DB: Query healthy replicas
-    Failover->>Failover: Rank by replication offset and uptime
-    Failover->>Replica: Promote to primary
-    Replica-->>Failover: Promotion result
-    Failover->>DB: Update node roles
-    Failover->>Failover: Rebuild routing state
-    Failover-->>Dashboard: Emit failover event
+Client->>Coordinator: GET(key)
 
-The current implementation provides automated failure detection and promotion logic, but it does not claim consensus, linearizability, or guaranteed zero-downtime behaviour under every network-partition or concurrent-failure scenario.
+Coordinator->>Coordinator: Hash Key
 
-🧠 Cache Engine Design
+Coordinator->>ReadNode: Read Request
 
-The cache engine combines:
+ReadNode-->>Coordinator: Value / MISS
 
-std::unordered_map for average O(1) key indexing,
+Coordinator-->>Client: Response
+```
 
-a doubly linked list for access-order tracking,
+### Flow
 
-access counters for frequency information,
+- Client sends a GET request.
+- Coordinator determines the shard.
+- A healthy node is selected from the read pool.
+- During migration, fallback to the previous topology is supported.
+- Missing keys can be migrated lazily.
+- Remaining TTL is preserved throughout migration.
 
-an ordered expiration structure for TTL scheduling,
+---
 
-and mutex protection for concurrent access.
+## ❌ Delete Path
 
-LRFU-Inspired Eviction
+```mermaid
+sequenceDiagram
 
-When the cache reaches capacity:
+participant Client
+participant Coordinator
+participant Primary
 
-the engine examines a bounded set of the oldest entries,
+Client->>Coordinator: DELETE(key)
 
-compares their access counts,
+Coordinator->>Primary: Forward Delete
 
-and evicts the least frequently used candidate from that old-entry sample.
+Primary->>Primary: Remove Key
 
-This is intentionally described as LRFU-inspired because it combines recency and frequency rather than implementing strict LRU or strict LFU.
+Primary-->>Coordinator: Success
 
-💻 Tech Stack
+Coordinator-->>Client: Response
+```
 
-Cache Engine
+During online migration:
 
-C++20
+- Deletes are propagated to both old and new destinations.
+- Prevents stale copies after topology updates.
+- Maintains cache consistency throughout migration.
 
-CMake
+---
 
-STL containers, threads, mutexes, and atomics
+# 🔁 Online Shard Expansion
 
-cpp-httplib
+One of the major capabilities of the system is **online shard expansion**, allowing new shards to be introduced without stopping client traffic.
 
-nlohmann/json
+```mermaid
+sequenceDiagram
 
-Coordinator Backend
+participant Admin
+participant Coordinator
+participant OldRing
+participant NewRing
+participant OldPrimary
+participant NewPrimary
 
-Node.js
+Admin->>Coordinator: Add New Shard
 
-Express
+Coordinator->>OldRing: Snapshot Current Ring
 
-MongoDB
+Coordinator->>NewRing: Build Updated Ring
 
-Axios
+Coordinator->>OldPrimary: Enumerate Keys
 
-Socket.IO
+loop Keys Whose Destination Changes
 
-Frontend
+OldPrimary-->>Coordinator: Value + Remaining TTL
 
-React
+Coordinator->>NewPrimary: SET(Value,TTL)
 
-Vite
+Coordinator->>OldPrimary: DELETE Old Copy
 
-Socket.IO client
+end
 
-CSS
+Coordinator->>Coordinator: Switch Routing
 
-Infrastructure and Quality
+Coordinator-->>Admin: Migration Complete
+```
 
-Docker
+---
 
-Docker Compose
+## Migration Strategy
 
-C++ unit tests
+Instead of blocking every request during shard expansion, the coordinator maintains **two routing topologies** simultaneously.
 
-Concurrent throughput benchmark
+### During Migration
 
-GitHub Actions workflows
+✅ Normal reads continue
 
-📁 Repository Structure
+✅ Normal writes continue
 
-Distributed-Cache-System/
-├── .github/workflows/          # CI workflows
-├── benchmarks/                 # Throughput benchmark
-├── coordinator-backend/        # Node.js coordinator and cluster services
-│   └── server/
-│       ├── models/             # MongoDB models
-│       ├── routes/             # Cache, auth, and cluster APIs
-│       └── services/           # Hash ring, migration, health, and failover
-├── coordinator-frontend/       # React monitoring dashboard
-├── cpp-cache-engine/           # CMake configuration and engine Dockerfile
-├── src/                        # C++ cache-engine implementation
-├── tests/                      # Cache-engine unit tests
-├── docker-compose.yml          # Multi-service cluster configuration
+✅ Previous routing remains available
+
+✅ Lazy-read migration supported
+
+✅ Remaining TTL preserved
+
+✅ Stale copies removed automatically
+
+✅ Additional topology updates are queued until migration finishes
+
+---
+
+### Why this approach?
+
+Compared with pausing the cluster during rebalancing, this strategy provides:
+
+- Lower service disruption
+- Smaller migration batches
+- Continuous client availability
+- Reduced latency spikes
+- Incremental shard scaling
+
+---
+
+# ❤️ Health Monitoring & Automatic Failover
+
+Node health is continuously monitored through heartbeat checks.
+
+If a Primary repeatedly fails to respond, the coordinator automatically promotes the most suitable Replica.
+
+```mermaid
+sequenceDiagram
+
+participant Monitor
+participant Primary
+participant MongoDB
+participant Failover
+participant Replica
+participant Dashboard
+
+loop Health Check
+
+Monitor->>Primary: Ping
+
+end
+
+Primary --x Monitor: Timeout
+
+Monitor->>MongoDB: Mark Offline
+
+Monitor->>Failover: Trigger Failover
+
+Failover->>MongoDB: Query Healthy Replicas
+
+Failover->>Replica: Promote
+
+Replica-->>Failover: Success
+
+Failover->>MongoDB: Update Roles
+
+Failover-->>Dashboard: Broadcast Event
+```
+
+---
+
+## Failover Process
+
+1. Coordinator detects consecutive heartbeat failures.
+2. Node is marked unavailable.
+3. Healthy replicas are ranked using:
+   - Replication offset
+   - Uptime
+   - Health status
+4. Best replica becomes the new Primary.
+5. Routing tables are rebuilt.
+6. Dashboard receives live failover events.
+7. Subsequent client requests are automatically redirected.
+
+---
+
+> **Note**
+>
+> The current implementation performs automated failover and promotion but **does not claim linearizability, consensus-based election, or split-brain prevention** under arbitrary network partitions.
+
+---
+
+---
+
+# 🧠 Cache Engine Design
+
+The cache engine is implemented in **modern C++20** and is designed around a combination of high-performance data structures to provide fast lookups, efficient eviction, and concurrent access.
+
+## 🏛️ Internal Architecture
+
+```text
+                    Cache Engine
+
+                  +----------------+
+                  | HTTP Server    |
+                  +--------+-------+
+                           |
+                           v
+                 +---------+----------+
+                 | Cache Manager      |
+                 +---------+----------+
+                           |
+      +--------------------+---------------------+
+      |                    |                     |
+      v                    v                     v
++------------+     +----------------+     +--------------+
+| Hash Table |     | LRFU List      |     | TTL Scheduler|
++------------+     +----------------+     +--------------+
+      |                    |                     |
+      +--------------------+---------------------+
+                           |
+                    Cache Statistics
+```
+
+---
+
+## ⚡ Core Components
+
+### 🗂️ Hash Table
+
+Responsible for average **O(1)** key lookup.
+
+- Stores cache entries
+- Maps keys to values
+- Maintains iterators for fast deletion
+- Provides constant-time access
+
+---
+
+### 📋 Access List
+
+A doubly linked list maintains access ordering.
+
+Responsibilities:
+
+- Tracks recently used entries
+- Supports efficient eviction
+- Constant-time insertion
+- Constant-time removal
+
+---
+
+### ⏳ TTL Scheduler
+
+TTL expiration is handled using an ordered expiration structure.
+
+Features include:
+
+- O(log N) scheduling
+- Background cleanup thread
+- Lazy expiration during reads
+- Remaining TTL preservation during migration
+
+---
+
+### 📊 Statistics Collector
+
+Tracks runtime metrics including:
+
+- Cache Hits
+- Cache Misses
+- Writes
+- Deletes
+- Evictions
+- Expired Keys
+
+These metrics are exposed to the monitoring dashboard.
+
+---
+
+# 🔥 LRFU-Inspired Eviction
+
+When the cache reaches capacity, eviction is performed using an **LRFU-inspired policy**.
+
+Instead of implementing strict **LRU** or strict **LFU**, the engine combines both **recency** and **frequency**.
+
+### Eviction Process
+
+1. Cache reaches maximum capacity.
+2. A bounded set of oldest entries is examined.
+3. Access frequencies are compared.
+4. Least valuable candidate is selected.
+5. Entry is removed.
+6. New key is inserted.
+
+---
+
+### Why LRFU?
+
+| Policy | Weakness |
+|---------|----------|
+| LRU | Frequently accessed old items may be evicted |
+| LFU | Old hot entries may remain forever |
+| **LRFU-Inspired** | Balances both recency and frequency |
+
+This hybrid strategy improves cache efficiency under mixed workloads.
+
+---
+
+# 🔒 Thread Safety
+
+The cache engine is designed for concurrent execution.
+
+Synchronization is achieved using:
+
+- `std::mutex`
+- `std::lock_guard`
+- Atomic counters
+- Background worker threads
+
+Shared cache state is protected while allowing efficient concurrent request processing.
+
+---
+
+# 💻 Technology Stack
+
+## 🚀 Cache Engine
+
+| Technology | Purpose |
+|------------|----------|
+| C++20 | Core Engine |
+| CMake | Build System |
+| STL | Data Structures |
+| std::thread | Concurrency |
+| std::mutex | Synchronization |
+| cpp-httplib | HTTP Server |
+| nlohmann/json | JSON Serialization |
+
+---
+
+## 🌐 Coordinator Backend
+
+| Technology | Purpose |
+|------------|----------|
+| Node.js | Runtime |
+| Express | REST APIs |
+| MongoDB | Metadata Storage |
+| Axios | Internal Communication |
+| Socket.IO | Live Dashboard Updates |
+
+---
+
+## 🎨 Frontend
+
+| Technology | Purpose |
+|------------|----------|
+| React | UI |
+| Vite | Build Tool |
+| Socket.IO Client | Live Metrics |
+| CSS | Styling |
+
+---
+
+## 🐳 Infrastructure
+
+| Tool | Purpose |
+|------|----------|
+| Docker | Containerization |
+| Docker Compose | Multi-Service Deployment |
+| GitHub Actions | Continuous Integration |
+
+---
+
+# 📁 Repository Structure
+
+```text
+Distributed-Cache-System
+│
+├── .github/
+│   └── workflows/
+│
+├── benchmarks/
+│
+├── coordinator-backend/
+│   ├── server/
+│   │   ├── models/
+│   │   ├── routes/
+│   │   ├── middleware/
+│   │   ├── services/
+│   │   └── utils/
+│
+├── coordinator-frontend/
+│
+├── cpp-cache-engine/
+│
+├── src/
+│
+├── tests/
+│
+├── docker-compose.yml
+│
 └── README.md
+```
 
-🚀 Getting Started
+---
 
-Prerequisites
+# 🚀 Getting Started
 
-Install:
+## Prerequisites
 
-Docker
+Before running the project, install:
 
-Docker Compose
+- Docker
+- Docker Compose
+- Git
 
-Git
+---
 
-1. Clone the Repository
+## 1️⃣ Clone Repository
 
+```bash
 git clone https://github.com/Rudy-123/Distributed-Cache-System.git
+
 cd Distributed-Cache-System
+```
 
-2. Build and Start the Cluster
+---
 
+## 2️⃣ Build the Cluster
+
+```bash
 docker compose up --build -d
+```
 
-3. Verify Running Services
+---
 
+## 3️⃣ Verify Services
+
+```bash
 docker compose ps
+```
 
-4. View Logs
+---
 
+## 4️⃣ View Logs
+
+Entire cluster:
+
+```bash
 docker compose logs -f
+```
 
-For a specific service:
+Specific service:
 
+```bash
 docker compose logs -f <service-name>
+```
 
-5. Access the Application
+---
 
-Using the current default configuration:
+## 5️⃣ Access Services
 
-Frontend dashboard: http://localhost:3000
+| Service | Default Address |
+|----------|-----------------|
+| Dashboard | http://localhost:3000 |
+| Coordinator API | http://localhost:5000 |
+| Primary Cache Node | http://localhost:5051 |
 
-Coordinator API: http://localhost:5000
+> Additional ports can be found inside `docker-compose.yml`.
 
-Primary cache node: http://localhost:5051
+---
 
-Check docker-compose.yml for the complete list of configured node ports and service names.
+## 6️⃣ Stop Cluster
 
-6. Stop the Cluster
-
+```bash
 docker compose down
+```
 
-To remove associated volumes as well:
+Remove associated volumes:
 
+```bash
 docker compose down -v
+```
 
-🧪 Testing and Benchmarking
+---
 
-Cache-Engine Tests
+# 🧪 Testing & Benchmarking
 
-The test suite covers:
+## Unit Tests
 
-SET, GET, and DELETE
+The test suite validates:
 
-cache hits and misses
+- Cache SET
+- Cache GET
+- Cache DELETE
+- Cache Hits
+- Cache Misses
+- Capacity Eviction
+- TTL Expiration
+- Concurrent Access
+- Multithreaded Correctness
 
-capacity-based eviction
+Build and execute the test target using the CMake configuration inside **cpp-cache-engine**.
 
-TTL expiration
+---
 
-concurrent access
+## Throughput Benchmark
 
-capacity validation under multithreaded operations
+The benchmark measures:
 
-Build and run the test target according to the CMake configuration inside cpp-cache-engine/.
+- Successful Operations
+- Failed Operations
+- Elapsed Time
+- Operations / Second
 
-Throughput Benchmark
+The benchmark is designed for repeatable functional testing and throughput evaluation.
 
-The benchmark supports concurrent SET and GET requests and reports:
+Current implementation does **not** claim:
 
-successful operations,
+- p50 latency
+- p95 latency
+- p99 latency
+- Production-scale benchmarking
 
-failed operations,
+---
 
-elapsed execution time,
+# 🔌 API Overview
 
-and operations per second.
+The **Coordinator** exposes APIs for:
 
-The benchmark is intended for repeatable functional and throughput evaluation. It does not currently claim p50/p95/p99 latency, replication-lag guarantees, or production-scale performance.
+- Cache GET
+- Cache SET
+- Cache DELETE
+- Cluster Status
+- Node Registration
+- Authentication
+- Monitoring Data
 
-🔌 API Behaviour
+---
 
-The coordinator exposes APIs for:
+Each **C++ Cache Node** exposes internal endpoints for:
 
-cache SET, GET, and DELETE,
+- Cache Operations
+- Health Checks
+- Replication
+- Peer Registration
+- Leader Promotion
+- Statistics
+- Key Enumeration
+- Migration Support
 
-cluster status,
+Refer to the source code for the exact endpoint definitions.
+---
 
-node registration and management,
+# 🌟 Why This Project?
 
-authentication,
+This project demonstrates the implementation of several core distributed systems concepts within a single end-to-end application.
 
-and monitoring data.
+### Key Engineering Highlights
 
-The C++ nodes expose HTTP endpoints used internally for:
+- ⚡ High-performance concurrent cache engine written in **C++20**
+- 🌍 Deterministic sharding with binary-search based routing
+- 🔄 Primary–Replica replication with quorum-based writes
+- ❤️ Automatic health monitoring and failover
+- 🔁 Online shard expansion with background key migration
+- ⏳ TTL-aware cache with background expiration
+- 📊 Real-time monitoring dashboard built with **React** and **Socket.IO**
+- 🐳 Fully containerized deployment using **Docker Compose**
+- 🧪 Unit testing and concurrent throughput benchmarking
 
-cache operations,
+The project combines systems programming, distributed systems, backend development, frontend visualization, and DevOps into a single engineering prototype.
 
-health checks,
 
-replication,
+# 📊 Project Statistics
 
-peer registration,
+| Category | Implementation |
+|-----------|---------------|
+| Language | C++20 |
+| Backend | Node.js + Express |
+| Frontend | React |
+| Database | MongoDB |
+| Deployment | Docker Compose |
+| Communication | HTTP + JSON |
+| Monitoring | Socket.IO |
+| Build System | CMake |
+| Testing | Unit Tests + Benchmarks |
 
-role promotion,
+---
 
-statistics,
+# 🤝 Contributing
 
-and key enumeration during migration.
+Contributions are welcome!
 
-Refer to the route and HTTP-server source files for the exact endpoint paths and request schemas.
+If you'd like to improve the project, feel free to open an issue or submit a pull request.
 
-⚠️ Current Limitations
+## Development Workflow
 
-This project deliberately prioritises implementation depth and distributed-systems learning over production hardening.
+### 1. Fork the repository
 
-Current limitations include:
+Click the **Fork** button at the top-right of the GitHub page.
 
-in-memory and volatile storage,
+---
 
-no durable write-ahead log or snapshot recovery,
+### 2. Clone your fork
 
-a single coordinator process,
+```bash
+git clone https://github.com/<your-username>/Distributed-Cache-System.git
 
-no consensus protocol for primary election,
+cd Distributed-Cache-System
+```
 
-no formal split-brain prevention under network partitions,
+---
 
-no guarantee of linearizable reads,
+### 3. Create a feature branch
 
-no guaranteed zero-downtime behaviour,
+```bash
+git checkout -b feature/amazing-feature
+```
 
-limited fault-injection and long-duration stress testing,
+---
 
-and no claim of Redis protocol compatibility.
+### 4. Commit your changes
 
-These limitations are documented to keep the project technically honest and to define clear directions for future work.
+```bash
+git commit -m "Add amazing feature"
+```
 
-🛣️ Future Improvements
+---
 
-Durable snapshots or append-only persistence
+### 5. Push the branch
 
-Idempotency keys and stronger retry semantics
+```bash
+git push origin feature/amazing-feature
+```
 
-Consensus-backed leader election
+---
 
-Split-brain prevention and fencing tokens
+### 6. Open a Pull Request
 
-Configurable consistency levels
+Describe the motivation, implementation details, and testing performed.
 
-Replication-offset validation before reads
+---
 
-Graceful migration recovery after coordinator restart
+## Contribution Guidelines
 
-p50, p95, and p99 latency reporting
+Please ensure that:
 
-Network-delay and packet-loss fault injection
+- Code follows the existing style.
+- Documentation is updated.
+- New functionality includes tests where applicable.
+- Pull requests remain focused on a single feature.
 
-Long-running concurrency and memory stress tests
+---
 
-Authentication, authorization, and transport security hardening
+# 📜 License
 
-Prometheus-compatible metrics and alerting
+Distributed Cache System is licensed under the **MIT License**.
 
-🤝 Contributing
+See the **LICENSE** file for additional details.
 
-Contributions are welcome.
-
-Fork the repository.
-
-Create a feature branch:
-
-git checkout -b feature/your-feature
-
-Add or update tests and documentation.
-
-Commit the changes:
-
-git commit -m "Add your feature"
-
-Push the branch and open a pull request.
-
-📄 License
-
-This project is licensed under the MIT License. See the LICENSE file for details.
+---
